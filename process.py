@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import tensorflow as tf
 
 # Import necessary components from TensorFlow
@@ -51,7 +52,8 @@ model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=
 
 # Check if a pre-trained model exists
 existing_model_filename = "model.h5"
-if tf.keras.utils.model_to_dot(model).to_string() == tf.keras.utils.model_to_dot(tf.keras.models.load_model(existing_model_filename)).to_string():
+
+if os.path.exists(existing_model_filename):
     # Load existing model and continue training
     model = tf.keras.models.load_model(existing_model_filename)
     print("Loaded existing model:", existing_model_filename)
