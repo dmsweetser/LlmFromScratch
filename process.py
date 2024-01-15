@@ -49,12 +49,13 @@ model = Sequential([
 
 model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 model.summary()
-model.save()
 
 # Train the model
 epochs = 100  # Increase the number of epochs to give the model more time to learn
 batch_size = 32
 model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
+
+model.save()
 
 # Evaluate the model and generate text:
 def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate):
