@@ -49,6 +49,7 @@ model = Sequential([
 
 model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 model.summary()
+model.save()
 
 # Train the model
 epochs = 100  # Increase the number of epochs to give the model more time to learn
