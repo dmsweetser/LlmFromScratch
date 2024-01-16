@@ -12,8 +12,18 @@ LSTM = tf.keras.layers.LSTM
 Dense = tf.keras.layers.Dense
 Dropout = tf.keras.layers.Dropout
 
-# Importing text data from an external module named data.
-from data import text_data_arr
+# Importing text data from files in the "source_data" subfolder with specific extensions.
+source_data_folder = "source_data"
+allowed_extensions = [".cs", ".cshtml", ".js"]  # Add or modify extensions as needed
+
+text_data_arr = []
+
+for filename in os.listdir(source_data_folder):
+    if filename.endswith(tuple(allowed_extensions)):
+        file_path = os.path.join(source_data_folder, filename)
+        with open(file_path, "r", encoding="utf-8") as file:
+            file_data = file.read()
+            text_data_arr.append(file_data)
 
 # Create and configure the tokenizer with a specified vocabulary size.
 tokenizer = Tokenizer(char_level=True, lower=True)
@@ -47,15 +57,14 @@ output_sequences = np.array(output_sequences)
 # Determine the vocabulary size based on the unique words in the tokenizer.
 vocab_size = len(tokenizer.word_index) + 1
 
-# Define the sequence length for the generate_text function.
-sequence_length = context_length
-
-# Define the model architecture.
 model = Sequential([
+    # Embedding layer that maps each word in the input sequence to a dense vector
     Embedding(vocab_size, 32, input_length=context_length),
+    # First LSTM layer with 128 units, returning a sequence of outputs for each time step
     LSTM(128, return_sequences=True, dropout=0.2, recurrent_dropout=0.2),
+    # Second LSTM layer with 128 units, returning only the final output for the whole sequence
     LSTM(128, dropout=0.2, recurrent_dropout=0.2),
-    Dense(128, activation="relu"),
+    # Dense layer with a softmax activation, outputting a probability distribution over the vocabulary
     Dense(vocab_size, activation="softmax"),
 ])
 
@@ -109,10 +118,10 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
 
     return generated_text
 
-seed_text = "2 + 2 = "
+seed_text = "Tell me what you know about"
 
 # Setting a seed text and generating text using the generate_text function.
 # The generated text is printed to the console.
 # The temperature parameter is used to control the level of randomness in the generated text.
-generated_text = generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate=800, temperature=0.5)
+generated_text = generate_text(seed_text, model, tokenizer, context_length, num_chars_to_generate=800, temperature=0.5)
 print(generated_text)
