@@ -18,12 +18,25 @@ allowed_extensions = [".cs", ".cshtml", ".js"]  # Add or modify extensions as ne
 
 text_data_arr = []
 
-for filename in os.listdir(source_data_folder):
-    if filename.endswith(tuple(allowed_extensions)):
-        file_path = os.path.join(source_data_folder, filename)
+
+def read_file(file_path):
+    try:
         with open(file_path, "r", encoding="utf-8") as file:
             file_data = file.read()
             text_data_arr.append(file_data)
+            print(f"Data added:\n{file_data}")
+    except Exception as e:
+        print(f"Error reading file {file_path}: {e}")
+
+def traverse_and_read_files(folder_path):
+    for root, dirs, files in os.walk(folder_path):
+        for filename in files:
+            if filename.endswith(tuple(allowed_extensions)):
+                file_path = os.path.join(root, filename)
+                read_file(file_path)
+
+# Perform recursive file traversal
+traverse_and_read_files(source_data_folder)
 
 # Create and configure the tokenizer with a specified vocabulary size.
 tokenizer = Tokenizer(char_level=True, lower=True)
