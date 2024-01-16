@@ -63,7 +63,7 @@ model = Sequential([
 model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
 # Checking if a pre-trained model exists. If yes, load it; otherwise, train a new model, save it, and print the respective messages.
-existing_model_filename = "model.h5"
+existing_model_filename = "model.keras"
 
 if os.path.exists(existing_model_filename):
     # Load existing model and continue training.
