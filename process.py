@@ -1,6 +1,12 @@
 import numpy as np
 import os
 import tensorflow as tf
+from tensorflow_model_optimization.sparsity import keras as sparsity
+import datetime
+import time
+
+# Set the environment variable TF_ENABLE_ONEDNN_OPTS to 0
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 Tokenizer = tf.keras.preprocessing.text.Tokenizer
 pad_sequences = tf.keras.preprocessing.sequence.pad_sequences
@@ -21,13 +27,26 @@ text_data_arr = [
 
 context_length = 512
 
-# Load existing or train a new model
-existing_model_filename = "model.keras"
+# Log file setup
+current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+log_file_name = f"chat_log_{current_date}.txt"
+
+# Declare the model as a global variable
+model = None
 
 tokenizer = Tokenizer(char_level=True, lower=True)  # Initialize tokenizer
 
+def log_to_file(message):
+    timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    log_entry = f"{timestamp} {message}\n"
+
+    with open(log_file_name, "a") as log_file:
+        log_file.write(log_entry)
+
 def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0):
-    generated_text = seed_text
+    start_time = time.time()
+
+    generated_text = f"USER: {seed_text}\nASSISTANT: "
 
     for _ in range(num_chars_to_generate):
         token_list = tokenizer.texts_to_sequences([generated_text])[0]
@@ -50,12 +69,19 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
                 break
 
         generated_text += output_word
+        if output_word != "":
+            print(f"Latest Response: {output_word}")
+            log_to_file(f"Latest Response: {output_word}")
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+    log_to_file(f"Time taken for text generation: {time_taken} seconds")
 
     return generated_text
 
-if os.path.exists(existing_model_filename):
-    model = tf.keras.models.load_model(existing_model_filename)
-    print("Loaded existing model:", existing_model_filename)
+if os.path.exists("model.keras"):
+    model = tf.keras.models.load_model("model.keras")
+    log_to_file(f"Loaded existing model: model.keras")
 else:
     # Train the model from scratch with shuffled input sequences.
     tokenizer.fit_on_texts(text_data_arr)
@@ -91,25 +117,30 @@ else:
     epochs = 10
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
-    print("Trained a new model")
+    log_to_file("Trained a new model")
 
-    model.save(existing_model_filename)
-    print("Saved the model as", existing_model_filename)
+    # Save the trained model
+    model.save("model.keras")
+    log_to_file("Saved the trained model as model.keras")
 
 # Chat loop
 while True:
     user_question = input("You: ")
-    
-    # Generate a response using the trained model
+    log_to_file(f"User: {user_question}")
+
+    # Generate a response using the model
     generated_response = generate_text(user_question, model, tokenizer, context_length, num_chars_to_generate=800, temperature=0.5)
     print("Assistant:", generated_response)
+    log_to_file(f"Assistant: {generated_response}")
 
     # Ask if the answer is good or bad
     user_feedback = input("Is the answer good or bad? (Type 'good' or 'bad'): ")
+    log_to_file(f"User Feedback: {user_feedback}")
 
     if user_feedback.lower() == 'bad':
         # Ask for the correct answer
         correct_answer = input("How should I have answered? Enter the correct response: ")
+        log_to_file(f"Correct Answer: {correct_answer}")
 
         # Update the training data with the new question and answer
         new_data = [f"USER: {user_question}\nASSISTANT: {correct_answer}"]
@@ -128,12 +159,14 @@ while True:
                 input_sequences = np.append(input_sequences, [input_padding], axis=0)
                 output_sequences = np.append(output_sequences, [output_sequence])
 
-        # Retrain the model with the updated data
-        model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
-        model.save(existing_model_filename)
-        print("Model retrained with the updated data")
+        # Retrain the pruned model with the updated data
+        callbacks = [sparsity.UpdatePruningStep()]
+        model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size, callbacks=callbacks)
+        model.save("model.keras")
+        log_to_file("Model retrained with the updated data")
 
     # Optionally, add an exit condition for the chat loop
     exit_chat_loop = input("Do you want to exit the chat loop? (Type 'yes' to exit): ")
+    log_to_file(f"Exit Chat Loop: {exit_chat_loop}")
     if exit_chat_loop.lower() == 'yes':
         break

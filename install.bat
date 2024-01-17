@@ -20,6 +20,7 @@ if %errorlevel% neq 0 (
 echo Virtual environment created successfully.
 
 REM Activate the virtual environment
+call venv\Scripts\python.exe -m pip install --upgrade pip
 call venv\Scripts\Activate.bat
 if %errorlevel% neq 0 (
     echo Error: Unable to activate virtual environment.
@@ -31,8 +32,7 @@ echo Virtual environment activated successfully.
 echo Installing required packages...
 
 REM Install required packages
-pip install -r requirements.txt
-export LD_LIBRARY_PATH=/gnu/store/v8d7j5i02nfz951x1szbl9xrd873vc3l-zlib-1.2.12/lib:$LD_LIBRARY_PATH
+pip install --upgrade --force-reinstall --no-cache-dir -r requirements.txt
 if %errorlevel% neq 0 (
     echo Error: Unable to install required packages.
     exit /b 1
