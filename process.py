@@ -42,7 +42,7 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
     start_time = time.time()
 
     generated_text = [f"[INST]{seed_text}[/INST]"]
-
+    result = ""
 
     for _ in range(num_chars_to_generate):
 
@@ -69,16 +69,16 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
                 output_word = word
                 break
 
-        generated_text += output_word
+        result += output_word
         if output_word != "":
-            print(f"Current Result: {generated_text}")
-            log_to_file(f"Current Result: {generated_text}")
+            print(f"Current Result: {result}")
+            log_to_file(f"Current Result: {result}")
 
     end_time = time.time()
     time_taken = end_time - start_time
     log_to_file(f"Time taken for text generation: {time_taken} seconds")
 
-    return generated_text
+    return result
 
 if os.path.exists("model.keras"):
     model = tf.keras.models.load_model("model.keras")
