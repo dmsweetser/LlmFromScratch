@@ -149,8 +149,6 @@ while True:
         for seq in new_sequences:
             for i in range(1, len(seq)):
                 input_sequence = seq[:i + 1]
-                input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
-
                 output_sequence = seq[i]
 
                 # Ensure the input sequence is padded to the correct length
@@ -159,9 +157,8 @@ while True:
                 input_sequences = np.append(input_sequences, [input_padding], axis=0)
                 output_sequences = np.append(output_sequences, [output_sequence])
 
-        # Retrain the pruned model with the updated data
-        callbacks = [sparsity.UpdatePruningStep()]
-        model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size, callbacks=callbacks)
+        # Retrain the model with the updated data
+        model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
         model.save("model.keras")
         log_to_file("Model retrained with the updated data")
 
