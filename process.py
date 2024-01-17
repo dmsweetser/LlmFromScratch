@@ -18,12 +18,7 @@ Dropout = tf.keras.layers.Dropout
 Attention = tf.keras.layers.Attention
 
 # Define the initial text data
-text_data_arr = [
-    '''
-    USER: What is your name?
-    ASSISTANT: My name is Dave.
-    '''
-]
+text_data_arr = ["[INST]What is your name?[/INST]My name is Bob.<s>"]
 
 context_length = 512
 
@@ -46,9 +41,15 @@ def log_to_file(message):
 def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0):
     start_time = time.time()
 
-    generated_text = f"USER: {seed_text}\nASSISTANT: "
+    generated_text = [f"[INST]{seed_text}[/INST]"]
+
 
     for _ in range(num_chars_to_generate):
+
+        # Check if "<s>" is in the generated text
+        if "<s>" in generated_text:
+            break
+
         token_list = tokenizer.texts_to_sequences([generated_text])[0]
         token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
 
@@ -70,8 +71,8 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
 
         generated_text += output_word
         if output_word != "":
-            print(f"Latest Response: {output_word}")
-            log_to_file(f"Latest Response: {output_word}")
+            print(f"Current Result: {generated_text}")
+            log_to_file(f"Current Result: {generated_text}")
 
     end_time = time.time()
     time_taken = end_time - start_time
@@ -143,7 +144,7 @@ while True:
         log_to_file(f"Correct Answer: {correct_answer}")
 
         # Update the training data with the new question and answer
-        new_data = [f"USER: {user_question}\nASSISTANT: {correct_answer}"]
+        new_data = [f"[INST]{seed_text}[/INST]{correct_answer}<s>"]
         new_sequences = tokenizer.texts_to_sequences(new_data)
 
         for seq in new_sequences:
