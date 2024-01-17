@@ -72,7 +72,6 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
         result += output_word
         if output_word != "":
             print(f"Current Result: {result}")
-            log_to_file(f"Current Result: {result}")
 
     end_time = time.time()
     time_taken = end_time - start_time
@@ -115,7 +114,7 @@ else:
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    epochs = 10
+    epochs = 100
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
     log_to_file("Trained a new model")
@@ -130,7 +129,7 @@ while True:
     log_to_file(f"User: {user_question}")
 
     # Generate a response using the model
-    generated_response = generate_text(user_question, model, tokenizer, context_length, num_chars_to_generate=800, temperature=0.5)
+    generated_response = generate_text(user_question, model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=0.5)
     print("Assistant:", generated_response)
     log_to_file(f"Assistant: {generated_response}")
 
@@ -144,7 +143,7 @@ while True:
         log_to_file(f"Correct Answer: {correct_answer}")
 
         # Update the training data with the new question and answer
-        new_data = [f"[INST]{seed_text}[/INST]{correct_answer}<s>"]
+        new_data = [f"[INST]{user_question}[/INST]{correct_answer}<s>"]
         new_sequences = tokenizer.texts_to_sequences(new_data)
 
         for seq in new_sequences:
