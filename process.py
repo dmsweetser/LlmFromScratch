@@ -47,7 +47,7 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
     for _ in range(num_chars_to_generate):
 
         # Check if "<s>" is in the generated text
-        if "<s>" in generated_text:
+        if "<s>" in result:
             break
 
         token_list = tokenizer.texts_to_sequences([generated_text])[0]
