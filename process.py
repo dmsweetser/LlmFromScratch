@@ -11,6 +11,8 @@ import time
 # Set the environment variable TF_ENABLE_ONEDNN_OPTS to 0
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
+end_token = "[END]"
+
 # Define the initial text data with question-answer pairs
 text_data_arr = [
     "What is your name? [A] My name is Bob. [END]",
