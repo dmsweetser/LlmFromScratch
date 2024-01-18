@@ -19,8 +19,8 @@ Attention = tf.keras.layers.Attention
 
 # Define the initial text data
 text_data_arr = [
-    "USER: What is your name?\nASSISTANT: My name is Bob."
-    "USER: What is 2 + 2?\nASSISTANT: 2 + 2 = 4."
+    "What is your name? My name is Bob."
+    "What is 2 + 2? 2 + 2 = 4."
     ]
 
 context_length = 512
@@ -32,7 +32,8 @@ log_file_name = f"chat_log_{current_date}.txt"
 # Declare the model as a global variable
 model = None
 
-tokenizer = Tokenizer(char_level=True, lower=True)  # Initialize tokenizer
+# Tokenizes at the word level
+tokenizer = Tokenizer(lower=True)  # Initialize tokenizer
 
 def log_to_file(message):
     timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -44,7 +45,7 @@ def log_to_file(message):
 def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0):
     start_time = time.time()
 
-    generated_text = [f"USER: {seed_text}\nASSISTANT: "]
+    generated_text = [f"{seed_text} "]
     result = ""
 
     for _ in range(num_chars_to_generate):
@@ -104,16 +105,24 @@ else:
 
     vocab_size = len(tokenizer.word_index) + 1
 
+    # Adjust embedding dimension and LSTM units
+
+    # The embedding layer is responsible for mapping words (or characters, in your case) to dense vectors of fixed size (embedding dimensions). Increasing the embedding dimension allows the model to represent each word in a more expressive and higher-dimensional space. This can potentially capture more intricate relationships between words. However, higher embedding dimensions also increase the model's computational complexity.
+    embedding_dim = 512
+    # LSTM (Long Short-Term Memory) units are the building blocks of the recurrent layers in your model. LSTM units are responsible for capturing sequential patterns and dependencies in the input data. Increasing the number of LSTM units provides the model with more capacity to learn complex relationships in the data. However, a higher number of units also increases the computational load and the risk of overfitting if not properly regularized.
+    lstm_units = 4096
+
     model = Sequential([
-        Embedding(vocab_size, 32, input_length=context_length),
-        LSTM(128, return_sequences=True, dropout=0.2, recurrent_dropout=0.2),
-        LSTM(128, dropout=0.2, recurrent_dropout=0.2),
+        Embedding(vocab_size, embedding_dim, input_length=context_length),
+        LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2),
+        LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2),
         Dense(vocab_size, activation="softmax"),
     ])
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    epochs = 100
+    # Increased epochs to 200
+    epochs = 200
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
     log_to_file("Trained a new model")
@@ -122,13 +131,21 @@ else:
     model.save("model.keras")
     log_to_file("Saved the trained model as model.keras")
 
+# Initial test requests
+log_to_file(f"User: What is your name?")
+generated_response = generate_text("What is your name?", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
+log_to_file(f"Assistant: {generated_response}")
+log_to_file(f"User: What is 2 + 2?")
+generated_response = generate_text("What is 2 + 2?", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
+log_to_file(f"Assistant: {generated_response}")
+
 # Chat loop
 while True:
     user_question = input("You: ")
     log_to_file(f"User: {user_question}")
 
     # Generate a response using the model
-    generated_response = generate_text(user_question, model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=0.5)
+    generated_response = generate_text(user_question, model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
     print("Assistant:", generated_response)
     log_to_file(f"Assistant: {generated_response}")
 
@@ -142,7 +159,7 @@ while True:
         log_to_file(f"Correct Answer: {correct_answer}")
 
         # Update the training data with the new question and answer
-        new_data = [f"USER: {user_question}\nASSISTANT: {correct_answer}"]
+        new_data = [f"{user_question} {correct_answer}"]
         new_sequences = tokenizer.texts_to_sequences(new_data)
 
         for seq in new_sequences:
