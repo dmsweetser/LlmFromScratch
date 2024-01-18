@@ -1,27 +1,21 @@
 import numpy as np
 import os
 import tensorflow as tf
-from tensorflow_model_optimization.sparsity import keras as sparsity
+from tensorflow.keras.layers import Input, Embedding, LSTM, Attention, Bidirectional, GRU, Conv1D, MaxPooling1D, BatchNormalization, Dense, Dropout
+from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 import datetime
 import time
 
 # Set the environment variable TF_ENABLE_ONEDNN_OPTS to 0
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-Tokenizer = tf.keras.preprocessing.text.Tokenizer
-pad_sequences = tf.keras.preprocessing.sequence.pad_sequences
-Sequential = tf.keras.models.Sequential
-Embedding = tf.keras.layers.Embedding
-LSTM = tf.keras.layers.LSTM
-Dense = tf.keras.layers.Dense
-Dropout = tf.keras.layers.Dropout
-Attention = tf.keras.layers.Attention
-
-# Define the initial text data
+# Define the initial text data with question-answer pairs
 text_data_arr = [
-    "What is your name? My name is Bob."
-    "What is 2 + 2? 2 + 2 = 4."
-    ]
+    "Q: What is your name? A: My name is Bob.",
+    "Q: What is 2 + 2? A: 2 + 2 = 4."
+]
 
 context_length = 512
 
@@ -42,14 +36,13 @@ def log_to_file(message):
     with open(log_file_name, "a") as log_file:
         log_file.write(log_entry)
 
-def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0):
+def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0, repetition_penalty=1.2):
     start_time = time.time()
 
-    generated_text = [f"{seed_text} "]
+    generated_text = [f"{seed_text}"]
     result = ""
 
     for _ in range(num_chars_to_generate):
-
         token_list = tokenizer.texts_to_sequences([generated_text])[0]
         token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
 
@@ -59,6 +52,17 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
         predicted_probs = np.log(predicted_probs) / temperature
         exp_preds = np.exp(predicted_probs)
         predicted_probs = exp_preds / np.sum(exp_preds)
+
+        # Apply repetition penalty
+        penalty_adjustment = np.ones_like(predicted_probs)
+        for word, index in tokenizer.word_index.items():
+            if word in generated_text:
+                penalty_adjustment[index - 1] = repetition_penalty
+        
+        predicted_probs = predicted_probs * penalty_adjustment
+
+        # Normalize probabilities to ensure they sum to 1
+        predicted_probs /= predicted_probs.sum()
 
         # Sample the next token.
         predicted_token = np.random.choice(len(predicted_probs), p=predicted_probs)
@@ -71,6 +75,7 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
 
         result += output_word
         if output_word != "":
+            generated_text.append(output_word)
             print(f"Current Result: {result}")
 
     end_time = time.time()
@@ -78,6 +83,7 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
     log_to_file(f"Time taken for text generation: {time_taken} seconds")
 
     return result
+
 
 if os.path.exists("model.keras"):
     model = tf.keras.models.load_model("model.keras")
@@ -91,11 +97,20 @@ else:
     output_sequences = []
 
     for seq in sequences:
-        for i in range(1, len(seq)):
-            input_sequence = seq[:i + 1]
+        # Split the entry into question and answer using the original text
+        original_text = text_data_arr[sequences.index(seq)]
+        parts = original_text.split("A:")
+        question, answer = parts[0], parts[1]
+
+        # Tokenize the question and answer separately
+        question_sequence = tokenizer.texts_to_sequences([question])[0]
+        answer_sequence = tokenizer.texts_to_sequences([answer])[0]
+
+        for i in range(1, len(answer_sequence) + 1):
+            input_sequence = question_sequence + answer_sequence[:i]
             input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
 
-            output_sequence = seq[i]
+            output_sequence = answer_sequence[i - 1]  # Use the i-th element of the answer_sequence
 
             input_sequences.append(input_padding)
             output_sequences.append(output_sequence)
@@ -106,22 +121,50 @@ else:
     vocab_size = len(tokenizer.word_index) + 1
 
     # Adjust embedding dimension and LSTM units
-
-    # The embedding layer is responsible for mapping words (or characters, in your case) to dense vectors of fixed size (embedding dimensions). Increasing the embedding dimension allows the model to represent each word in a more expressive and higher-dimensional space. This can potentially capture more intricate relationships between words. However, higher embedding dimensions also increase the model's computational complexity.
     embedding_dim = 512
-    # LSTM (Long Short-Term Memory) units are the building blocks of the recurrent layers in your model. LSTM units are responsible for capturing sequential patterns and dependencies in the input data. Increasing the number of LSTM units provides the model with more capacity to learn complex relationships in the data. However, a higher number of units also increases the computational load and the risk of overfitting if not properly regularized.
-    lstm_units = 4096
+    lstm_units = 128
 
-    model = Sequential([
-        Embedding(vocab_size, embedding_dim, input_length=context_length),
-        LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2),
-        LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2),
-        Dense(vocab_size, activation="softmax"),
-    ])
+    # Input layer for the sequence
+    sequence_input = Input(shape=(context_length,), dtype='int32')
+
+    # Embedding layer
+    embedded_sequence = Embedding(vocab_size, embedding_dim, input_length=context_length)(sequence_input)
+
+    # Bidirectional LSTM layer
+    lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(embedded_sequence)
+
+    # Attention layer
+    attention_output = Attention()([lstm_output, lstm_output])
+
+    # Convolutional layer
+    conv_output = Conv1D(filters=128, kernel_size=3, activation='relu')(attention_output)
+
+    # Max pooling layer
+    pooled_output = MaxPooling1D(pool_size=2)(conv_output)
+
+    # Batch normalization layer
+    normalized_output = BatchNormalization()(pooled_output)
+
+    # Bidirectional GRU layer
+    gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
+
+    # LSTM layer after attention
+    lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
+
+    # Additional Dense layer
+    dense_output = Dense(128, activation='relu')(lstm_attention_output)
+
+    # Dropout layer for regularization
+    dropout_output = Dropout(0.2)(dense_output)
+
+    # Output layer
+    output = Dense(vocab_size, activation='softmax')(dropout_output)
+
+    # Model
+    model = Model(inputs=sequence_input, outputs=output)
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    # Increased epochs to 200
     epochs = 200
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
@@ -133,10 +176,10 @@ else:
 
 # Initial test requests
 log_to_file(f"User: What is your name?")
-generated_response = generate_text("What is your name?", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
+generated_response = generate_text("Q: What is your name? A: My name is Bob.", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
 log_to_file(f"Assistant: {generated_response}")
 log_to_file(f"User: What is 2 + 2?")
-generated_response = generate_text("What is 2 + 2?", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
+generated_response = generate_text("Q: What is 2 + 2? A: 2 + 2 = 4.", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
 log_to_file(f"Assistant: {generated_response}")
 
 # Chat loop
@@ -159,7 +202,7 @@ while True:
         log_to_file(f"Correct Answer: {correct_answer}")
 
         # Update the training data with the new question and answer
-        new_data = [f"{user_question} {correct_answer}"]
+        new_data = [f"Q: {user_question} A: {correct_answer}"]
         new_sequences = tokenizer.texts_to_sequences(new_data)
 
         for seq in new_sequences:
