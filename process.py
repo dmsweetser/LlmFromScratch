@@ -95,7 +95,7 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
 dim = 4096
 n_layers = 32
 head_dim = 128
-hidden_dim = 14336
+hidden_dim = 8 # 14336
 n_heads = 32
 n_kv_heads = 8
 window_size = 4096
@@ -181,7 +181,7 @@ else:
 
         model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    epochs = 250
+    epochs = 1 # 250
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
     log_to_file("Trained a new model")
