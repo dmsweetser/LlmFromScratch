@@ -19,7 +19,7 @@ text_data_arr = [
     "What is 2 + 2? [A] 2 + 2 = 4. [END]"
 ]
 
-context_length = 512
+context_length = 8192  # Updated context length
 
 # Log file setup
 current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -91,6 +91,15 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
 
     return result
 
+# Modify the architecture based on the given parameters
+dim = 4096
+n_layers = 32
+head_dim = 128
+hidden_dim = 14336
+n_heads = 32
+n_kv_heads = 8
+window_size = 4096
+vocab_size = 32000
 
 if os.path.exists("model.keras"):
     model = tf.keras.models.load_model("model.keras")
@@ -125,11 +134,9 @@ else:
     input_sequences = np.array(input_sequences)
     output_sequences = np.array(output_sequences)
 
-    vocab_size = len(tokenizer.word_index) + 1
-
     # Adjust embedding dimension and LSTM units
-    embedding_dim = 512
-    lstm_units = 128
+    embedding_dim = dim
+    lstm_units = hidden_dim // 2  # Adjusted based on the hidden dimension
 
     # Input layer for the sequence
     sequence_input = Input(shape=(context_length,), dtype='int32')
@@ -137,40 +144,42 @@ else:
     # Embedding layer
     embedded_sequence = Embedding(vocab_size, embedding_dim, input_length=context_length)(sequence_input)
 
-    # Bidirectional LSTM layer
-    lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(embedded_sequence)
+    # Modify the model architecture based on the given parameters
+    for _ in range(n_layers):
+        # Bidirectional LSTM layer
+        lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(embedded_sequence)
 
-    # Attention layer
-    attention_output = Attention()([lstm_output, lstm_output])
+        # Attention layer
+        attention_output = Attention()([lstm_output, lstm_output])
 
-    # Convolutional layer
-    conv_output = Conv1D(filters=128, kernel_size=3, activation='relu')(attention_output)
+        # Convolutional layer
+        conv_output = Conv1D(filters=hidden_dim, kernel_size=3, activation='relu')(attention_output)
 
-    # Max pooling layer
-    pooled_output = MaxPooling1D(pool_size=2)(conv_output)
+        # Max pooling layer
+        pooled_output = MaxPooling1D(pool_size=2)(conv_output)
 
-    # Batch normalization layer
-    normalized_output = BatchNormalization()(pooled_output)
+        # Batch normalization layer
+        normalized_output = BatchNormalization()(pooled_output)
 
-    # Bidirectional GRU layer
-    gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
+        # Bidirectional GRU layer
+        gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
 
-    # LSTM layer after attention
-    lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
+        # LSTM layer after attention
+        lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
 
-    # Additional Dense layer
-    dense_output = Dense(128, activation='relu')(lstm_attention_output)
+        # Additional Dense layer
+        dense_output = Dense(hidden_dim, activation='relu')(lstm_attention_output)
 
-    # Dropout layer for regularization
-    dropout_output = Dropout(0.2)(dense_output)
+        # Dropout layer for regularization
+        dropout_output = Dropout(0.2)(dense_output)
 
-    # Output layer
-    output = Dense(vocab_size, activation='softmax')(dropout_output)
+        # Output layer
+        output = Dense(vocab_size, activation='softmax')(dropout_output)
 
-    # Model
-    model = Model(inputs=sequence_input, outputs=output)
+        # Model
+        model = Model(inputs=sequence_input, outputs=output)
 
-    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+        model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
     epochs = 250
     batch_size = 32
