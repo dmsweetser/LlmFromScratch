@@ -13,8 +13,8 @@ os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 # Define the initial text data with question-answer pairs
 text_data_arr = [
-    "Q: What is your name? A: My name is Bob.",
-    "Q: What is 2 + 2? A: 2 + 2 = 4."
+    "What is your name? [A] My name is Bob. [END]",
+    "What is 2 + 2? [A] 2 + 2 = 4. [END]"
 ]
 
 context_length = 512
@@ -36,13 +36,14 @@ def log_to_file(message):
     with open(log_file_name, "a") as log_file:
         log_file.write(log_entry)
 
-def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0, repetition_penalty=1.2):
+def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87, repetition_penalty=2.0):
     start_time = time.time()
 
-    generated_text = [f"{seed_text}"]
+    generated_text = seed_text
     result = ""
 
     for _ in range(num_chars_to_generate):
+        
         token_list = tokenizer.texts_to_sequences([generated_text])[0]
         token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
 
@@ -58,7 +59,7 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
         for word, index in tokenizer.word_index.items():
             if word in generated_text:
                 penalty_adjustment[index - 1] = repetition_penalty
-        
+
         predicted_probs = predicted_probs * penalty_adjustment
 
         # Normalize probabilities to ensure they sum to 1
@@ -73,9 +74,13 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
                 output_word = word
                 break
 
-        result += output_word
+        result += output_word + " "
+        if output_word == end_token:
+            print(f"Detected end token '{end_token}'. Ending generation.")
+            break
+
         if output_word != "":
-            generated_text.append(output_word)
+            generated_text += " " + output_word
             print(f"Current Result: {result}")
 
     end_time = time.time()
@@ -99,7 +104,7 @@ else:
     for seq in sequences:
         # Split the entry into question and answer using the original text
         original_text = text_data_arr[sequences.index(seq)]
-        parts = original_text.split("A:")
+        parts = original_text.split("[A]")
         question, answer = parts[0], parts[1]
 
         # Tokenize the question and answer separately
@@ -165,7 +170,7 @@ else:
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    epochs = 200
+    epochs = 250
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
     log_to_file("Trained a new model")
@@ -176,10 +181,10 @@ else:
 
 # Initial test requests
 log_to_file(f"User: What is your name?")
-generated_response = generate_text("Q: What is your name? A: My name is Bob.", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
+generated_response = generate_text("What is your name? [A]", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
 log_to_file(f"Assistant: {generated_response}")
 log_to_file(f"User: What is 2 + 2?")
-generated_response = generate_text("Q: What is 2 + 2? A: 2 + 2 = 4.", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
+generated_response = generate_text("What is 2 + 2? [A]", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
 log_to_file(f"Assistant: {generated_response}")
 
 # Chat loop
@@ -202,7 +207,7 @@ while True:
         log_to_file(f"Correct Answer: {correct_answer}")
 
         # Update the training data with the new question and answer
-        new_data = [f"Q: {user_question} A: {correct_answer}"]
+        new_data = [f"{user_question} [A] {correct_answer} [END]"]
         new_sequences = tokenizer.texts_to_sequences(new_data)
 
         for seq in new_sequences:
