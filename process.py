@@ -19,7 +19,7 @@ text_data_arr = [
     "What is 2 + 2? [A] 2 + 2 = 4. [END]"
 ]
 
-context_length = 8192  # Updated context length
+context_length = 2048  # Updated context length
 
 # Log file setup
 current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -92,14 +92,10 @@ def generate_text(seed_text, model, tokenizer, sequence_length, num_chars_to_gen
     return result
 
 # Modify the architecture based on the given parameters
-dim = 4096
-n_layers = 32
-head_dim = 128
-hidden_dim = 8 # 14336
-n_heads = 32
-n_kv_heads = 8
-window_size = 4096
-vocab_size = 32000
+dim = 1024 # 4096
+n_layers = 32 # 32
+hidden_dim = 128 # 14336
+vocab_size = 32000 # 32000
 
 if os.path.exists("model.keras"):
     model = tf.keras.models.load_model("model.keras")
@@ -181,7 +177,7 @@ else:
 
         model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    epochs = 1 # 250
+    epochs = 20 # 250
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
     log_to_file("Trained a new model")
