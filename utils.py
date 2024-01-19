@@ -64,8 +64,9 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
     return result
 
 def chat_loop(log_file_name, end_token, model, tokenizer, context_length, num_chars_to_generate, epochs, batch_size):
-    input_sequences = np.array([])
-    output_sequences = np.array([])
+    # Initialize empty lists for input and output sequences
+    input_sequences = []
+    output_sequences = []
 
     while True:
         user_question = input("You: ")
@@ -97,8 +98,13 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, num_ch
                     # Ensure the input sequence is padded to the correct length
                     input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
 
-                    input_sequences = np.append(input_sequences, [input_padding], axis=0)
-                    output_sequences = np.append(output_sequences, [output_sequence])
+                    # Append the sequences to the lists
+                    input_sequences.append(input_padding)
+                    output_sequences.append(output_sequence)
+
+            # Convert the lists to numpy arrays
+            input_sequences = np.array(input_sequences)
+            output_sequences = np.array(output_sequences)
 
             # Retrain the model with the updated data
             model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
