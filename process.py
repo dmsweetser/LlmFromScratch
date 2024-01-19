@@ -70,10 +70,19 @@ def main():
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     log_file_name = f"chat_log_{current_date}.txt"
 
+    # SMART AND SLOW
+    # context_length = 2048
+    # embedding_dim = 32
+    # lstm_units = 128
+    # hidden_dim = 128
+    # vocab_size = 32000
+    # n_layers = 32
+
+    # DUMB AND FAST
     context_length = 2048
     embedding_dim = 32
     lstm_units = 8
-    hidden_dim = 32000
+    hidden_dim = 8
     vocab_size = 32000
     n_layers = 4
 
