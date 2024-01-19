@@ -7,6 +7,7 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import datetime
 import time
+from utils import *
 
 def create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
     sequence_input = Input(shape=(context_length,), dtype='int32')
@@ -86,7 +87,7 @@ def main():
     vocab_size = 32000
     n_layers = 4
 
-    epochs = 10
+    epochs = 50
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True)
