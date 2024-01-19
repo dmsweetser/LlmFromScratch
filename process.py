@@ -177,7 +177,7 @@ else:
 
         model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    epochs = 20 # 250
+    epochs = 100
     batch_size = 32
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
     log_to_file("Trained a new model")
