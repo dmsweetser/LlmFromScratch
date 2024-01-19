@@ -30,11 +30,18 @@ model = None
 # Tokenizes at the character level
 tokenizer = Tokenizer(lower=True)
 
-# Architecture params
+# # Architecture params - SMART AND SLOW
+# context_length = 2048  # Updated context length
+# dim = 1024 # 4096
+# n_layers = 32 # 32
+# hidden_dim = 128 # 14336
+# vocab_size = 32000 # 32000
+
+# Architecture params - DUMB AND FAST
 context_length = 2048  # Updated context length
-dim = 1024 # 4096
-n_layers = 32 # 32
-hidden_dim = 128 # 14336
+dim = 32 # 4096
+n_layers = 4 # 32
+hidden_dim = 8 # 14336
 vocab_size = 32000 # 32000
 
 # Training params
