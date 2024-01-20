@@ -80,7 +80,7 @@ def main():
     # n_layers = 32
 
     context_length = 512
-    embedding_dim = 1024
+    embedding_dim = 512
     lstm_units = 1024
     hidden_dim = 1024
     vocab_size = 50000
