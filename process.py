@@ -8,6 +8,8 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 import datetime
 import time
 
+training_data_file = "training_data.json"
+
 def log_to_file(log_file_name, message):
     timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
     log_entry = f"{timestamp} {message}\n"
@@ -20,8 +22,6 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
 
     generated_text = seed_text
     result = ""
-
-    tokenizer.fit_on_texts([generated_text])
 
     for _ in range(num_chars_to_generate):
         token_list = tokenizer.texts_to_sequences([generated_text])[0]
@@ -78,8 +78,18 @@ def create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_d
     return model
 
 def preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name):
-    tokenizer.fit_on_texts(text_data_arr)
-    sequences = tokenizer.texts_to_sequences(text_data_arr)
+    # Load existing training data from the JSON file if it exists
+    existing_data = []
+    if os.path.exists(training_data_file):
+        with open(training_data_file, 'r') as json_file:
+            existing_data = json.load(json_file)
+
+    # Append new data to existing data
+    all_text_data_arr = existing_data + text_data_arr
+
+    # Update the tokenizer with the combined dataset
+    tokenizer.fit_on_texts(all_text_data_arr)
+    sequences = tokenizer.texts_to_sequences(all_text_data_arr)
 
     input_sequences = []
     output_sequences = []
@@ -110,6 +120,10 @@ def preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_fil
 
     log_to_file(log_file_name, f"Input Sequences Shape: {np.array(input_sequences).shape}")
     log_to_file(log_file_name, f"Output Sequences Shape: {np.array(output_sequences).shape}")
+
+    # Save training data to JSON file
+    with open(training_data_file, 'w') as json_file:
+        json.dump(text_data_arr, json_file)
 
     return np.array(input_sequences), np.array(output_sequences)
 
