@@ -15,7 +15,7 @@ def log_to_file(log_file_name, message):
     with open(log_file_name, "a") as log_file:
         log_file.write(log_entry)
 
-def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0):
+def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.5):
     start_time = time.time()
 
     generated_text = seed_text
@@ -94,13 +94,14 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, num_ch
                     input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
 
                     # Convert the input_padding to numpy array
-                    input_padding = np.array(input_padding)
+                    input_padding = np.array([input_padding])  # Wrap it in an additional list to match dimensions
 
                     # Concatenate the sequences to the arrays
-                    input_sequences = np.concatenate([input_sequences, [input_padding]])
+                    input_sequences = np.concatenate([input_sequences, input_padding])
                     output_sequences = np.concatenate([output_sequences, [output_sequence]])
 
             # Retrain the model with the updated data
             model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
             model.save("model.keras")
             log_to_file(log_file_name, "Model retrained with the updated data")
+

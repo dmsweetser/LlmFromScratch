@@ -79,14 +79,15 @@ def main():
     # vocab_size = 32000
     # n_layers = 32
 
+    # DUMB AND FAST
     context_length = 512
-    embedding_dim = 512
-    lstm_units = 1024
-    hidden_dim = 1024
+    embedding_dim = 32
+    lstm_units = 8
+    hidden_dim = 8
     vocab_size = 50000
     n_layers = 32
 
-    epochs = 10
+    epochs = 250
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True)
