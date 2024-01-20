@@ -7,7 +7,56 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import datetime
 import time
-from utils import *
+
+def log_to_file(log_file_name, message):
+    timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+    log_entry = f"{timestamp} {message}\n"
+
+    with open(log_file_name, "a") as log_file:
+        log_file.write(log_entry)
+
+def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.5):
+    start_time = time.time()
+
+    generated_text = seed_text
+    result = ""
+
+    tokenizer.fit_on_texts([generated_text])
+
+    for _ in range(num_chars_to_generate):
+        token_list = tokenizer.texts_to_sequences([generated_text])[0]
+        token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
+
+        predicted_probs = model.predict(token_list, verbose=0)[0]
+
+        predicted_probs = np.log(predicted_probs) / temperature
+        exp_preds = np.exp(predicted_probs)
+        predicted_probs = exp_preds / np.sum(exp_preds)
+
+        predicted_token = np.random.choice(len(predicted_probs), p=predicted_probs)
+
+        output_word = ""
+        for word, index in tokenizer.word_index.items():
+            if index == predicted_token:
+                output_word = word
+                break
+
+        print(output_word, end='')
+
+        if output_word != "":
+            result += output_word + " "
+            if output_word == end_token:
+                print(f"Detected end token '{end_token}'. Ending generation.")
+                break
+
+            generated_text += " " + output_word
+            print(f"Current Result: {result}")
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+    log_to_file(log_file_name, f"Time taken for text generation: {time_taken} seconds")
+
+    return result
 
 def create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
     sequence_input = Input(shape=(context_length,), dtype='int32')
@@ -30,7 +79,7 @@ def create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_d
 
     return model
 
-def preprocess_data(text_data_arr, tokenizer, context_length):
+def preprocess_data(text_data_arr, tokenizer, context_length, delimiter):
     tokenizer.fit_on_texts(text_data_arr)
     sequences = tokenizer.texts_to_sequences(text_data_arr)
 
@@ -39,11 +88,18 @@ def preprocess_data(text_data_arr, tokenizer, context_length):
 
     for seq in sequences:
         original_text = text_data_arr[sequences.index(seq)]
-        parts = original_text.split("garg")
+        parts = original_text.split(delimiter)
         question, answer = parts[0], parts[1]
+
+        print("Original Text:", original_text)
+        print("Question:", question)
+        print("Answer:", answer)
 
         question_sequence = tokenizer.texts_to_sequences([question])[0]
         answer_sequence = tokenizer.texts_to_sequences([answer])[0]
+
+        print("Question Sequence:", question_sequence)
+        print("Answer Sequence:", answer_sequence)
 
         for i in range(1, len(answer_sequence) + 1):
             input_sequence = question_sequence + answer_sequence[:i]
@@ -54,32 +110,61 @@ def preprocess_data(text_data_arr, tokenizer, context_length):
             input_sequences.append(input_padding)
             output_sequences.append(output_sequence)
 
+    print("Input Sequences Shape:", np.array(input_sequences).shape)
+    print("Output Sequences Shape:", np.array(output_sequences).shape)
+
     return np.array(input_sequences), np.array(output_sequences)
 
 def train_model(model, input_sequences, output_sequences, epochs, batch_size):
+    print("Input Sequences Shape:", input_sequences.shape)
+    print("Output Sequences Shape:", output_sequences.shape)
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
+
+def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimiter, num_chars_to_generate, epochs, batch_size):
+    while True:
+
+        # Initialize empty lists for input and output sequences
+        input_sequences = []
+        output_sequences = []
+
+        user_question = input("You: ")
+        log_to_file(log_file_name, f"User: {user_question}")
+
+        # Generate a response using the model
+        generated_response = generate_text(log_file_name, end_token, user_question, model, tokenizer, context_length, num_chars_to_generate=context_length)
+        print("Assistant:", generated_response)
+        log_to_file(log_file_name, f"Assistant: {generated_response}")
+
+        # Ask if the answer is good or bad
+        user_feedback = input("Is the answer good or bad? (Type 'good' or 'bad'): ")
+        log_to_file(log_file_name, f"User Feedback: {user_feedback}")
+
+        if user_feedback.lower() == 'bad':
+            # Ask for the correct answer
+            correct_answer = input("How should I have answered? Enter the correct response: ")
+            log_to_file(log_file_name, f"Correct Answer: {correct_answer}")
+
+            # Update the training data with the new question and answer
+            text_data_arr = [f"{user_question}{delimiter}{correct_answer}{end_token}"]
+            input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter)
+            train_model(model, input_sequences, output_sequences, epochs, batch_size)
+            log_to_file(log_file_name, "Trained a new model")
+
+            model.save("model.keras")
+            log_to_file(log_file_name, "Saved the trained model as model.keras")
 
 def main():
     os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-    end_token = "woot"
+    end_token = '[END]'
+    delimiter = '[?]'
 
     text_data_arr = [
-        "What is your name? garg My name is Bob. woot",
-        "What is 2 + 2? garg 2 + 2 = 4. woot"
+        f"your name{delimiter}bob{end_token}",
     ]
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     log_file_name = f"chat_log_{current_date}.txt"
 
-    # SMART AND SLOW
-    # context_length = 2048
-    # embedding_dim = 32
-    # lstm_units = 128
-    # hidden_dim = 128
-    # vocab_size = 32000
-    # n_layers = 32
-
-    # DUMB AND FAST
     context_length = 512
     embedding_dim = 32
     lstm_units = 8
@@ -87,7 +172,7 @@ def main():
     vocab_size = 50000
     n_layers = 32
 
-    epochs = 250
+    epochs = 150
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True)
@@ -96,23 +181,14 @@ def main():
         model = tf.keras.models.load_model("model.keras")
         log_to_file(log_file_name, f"Loaded existing model: model.keras")
     else:
-        input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length)
+        input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter)
         model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
         train_model(model, input_sequences, output_sequences, epochs, batch_size)
         log_to_file(log_file_name, "Trained a new model")
-
         model.save("model.keras")
         log_to_file(log_file_name, "Saved the trained model as model.keras")
 
-        # Initial test requests
-        log_to_file(log_file_name, f"User: What is your name?")
-        generated_response = generate_text(log_file_name, end_token, "What is your name? garg", model, tokenizer, context_length, num_chars_to_generate=context_length)
-        log_to_file(log_file_name, f"Assistant: {generated_response}")
-        log_to_file(log_file_name, f"User: What is 2 + 2?")
-        generated_response = generate_text(log_file_name, end_token, "What is 2 + 2? garg", model, tokenizer, context_length, num_chars_to_generate=context_length)
-        log_to_file(log_file_name, f"Assistant: {generated_response}")
-
-    chat_loop(log_file_name, end_token, model, tokenizer, context_length, num_chars_to_generate=context_length, epochs=epochs, batch_size=batch_size)
+    chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimiter, num_chars_to_generate=context_length, epochs=epochs, batch_size=batch_size)
 
 if __name__ == "__main__":
     main()
