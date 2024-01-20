@@ -48,12 +48,12 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
                 output_word = word
                 break
 
-        result += output_word + " "
-        if output_word == end_token:
-            print(f"Detected end token '{end_token}'. Ending generation.")
-            break
-
         if output_word != "":
+            result += output_word + " "
+            if output_word == end_token:
+                print(f"Detected end token '{end_token}'. Ending generation.")
+                break
+
             generated_text += " " + output_word
             print(f"Current Result: {result}")
 

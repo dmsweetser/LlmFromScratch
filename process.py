@@ -81,13 +81,13 @@ def main():
 
     # DUMB AND FAST
     context_length = 2048
-    embedding_dim = 32
-    lstm_units = 8
-    hidden_dim = 8
+    embedding_dim = 128
+    lstm_units = 32
+    hidden_dim = 32
     vocab_size = 32000
-    n_layers = 4
+    n_layers = 8
 
-    epochs = 50
+    epochs = 250
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True)
