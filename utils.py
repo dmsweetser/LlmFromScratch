@@ -15,7 +15,7 @@ def log_to_file(log_file_name, message):
     with open(log_file_name, "a") as log_file:
         log_file.write(log_entry)
 
-def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0, repetition_penalty=1.01):
+def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.5):
     start_time = time.time()
 
     generated_text = seed_text
@@ -33,13 +33,6 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
         exp_preds = np.exp(predicted_probs)
         predicted_probs = exp_preds / np.sum(exp_preds)
 
-        penalty_adjustment = np.ones_like(predicted_probs)
-        for word, index in tokenizer.word_index.items():
-            if word in generated_text:
-                penalty_adjustment[index - 1] = repetition_penalty
-
-        predicted_probs = predicted_probs * penalty_adjustment
-
         predicted_token = np.random.choice(len(predicted_probs), p=predicted_probs)
 
         output_word = ""
@@ -47,6 +40,8 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
             if index == predicted_token:
                 output_word = word
                 break
+
+        print(output_word)
 
         if output_word != "":
             result += output_word + " "
@@ -73,7 +68,7 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, num_ch
         log_to_file(log_file_name, f"User: {user_question}")
 
         # Generate a response using the model
-        generated_response = generate_text(log_file_name, end_token, user_question, model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
+        generated_response = generate_text(log_file_name, end_token, user_question, model, tokenizer, context_length, num_chars_to_generate=context_length)
         print("Assistant:", generated_response)
         log_to_file(log_file_name, f"Assistant: {generated_response}")
 
@@ -98,21 +93,14 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, num_ch
                     # Ensure the input sequence is padded to the correct length
                     input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
 
-                    # Append the sequences to the lists
-                    input_sequences.append(input_padding)
-                    output_sequences.append(output_sequence)
+                    # Convert the input_padding to numpy array
+                    input_padding = np.array(input_padding)
 
-            # Convert the lists to numpy arrays
-            input_sequences = np.array(input_sequences)
-            output_sequences = np.array(output_sequences)
+                    # Concatenate the sequences to the arrays
+                    input_sequences = np.concatenate([input_sequences, [input_padding]])
+                    output_sequences = np.concatenate([output_sequences, [output_sequence]])
 
             # Retrain the model with the updated data
             model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
             model.save("model.keras")
             log_to_file(log_file_name, "Model retrained with the updated data")
-
-        # Optionally, add an exit condition for the chat loop
-        exit_chat_loop = input("Do you want to exit the chat loop? (Type 'yes' to exit): ")
-        log_to_file(log_file_name, f"Exit Chat Loop: {exit_chat_loop}")
-        if exit_chat_loop.lower() == 'yes':
-            break

@@ -80,14 +80,14 @@ def main():
     # n_layers = 32
 
     # DUMB AND FAST
-    context_length = 2048
-    embedding_dim = 128
+    context_length = 256
+    embedding_dim = 64
     lstm_units = 32
     hidden_dim = 32
-    vocab_size = 32000
+    vocab_size = 50000
     n_layers = 8
 
-    epochs = 250
+    epochs = 40
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True)
@@ -104,13 +104,13 @@ def main():
         model.save("model.keras")
         log_to_file(log_file_name, "Saved the trained model as model.keras")
 
-    # Initial test requests
-    log_to_file(log_file_name, f"User: What is your name?")
-    generated_response = generate_text(log_file_name, end_token, "What is your name? garg", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
-    log_to_file(log_file_name, f"Assistant: {generated_response}")
-    log_to_file(log_file_name, f"User: What is 2 + 2?")
-    generated_response = generate_text(log_file_name, end_token, "What is 2 + 2? garg", model, tokenizer, context_length, num_chars_to_generate=context_length, temperature=1.0)
-    log_to_file(log_file_name, f"Assistant: {generated_response}")
+        # Initial test requests
+        log_to_file(log_file_name, f"User: What is your name?")
+        generated_response = generate_text(log_file_name, end_token, "What is your name? garg", model, tokenizer, context_length, num_chars_to_generate=context_length)
+        log_to_file(log_file_name, f"Assistant: {generated_response}")
+        log_to_file(log_file_name, f"User: What is 2 + 2?")
+        generated_response = generate_text(log_file_name, end_token, "What is 2 + 2? garg", model, tokenizer, context_length, num_chars_to_generate=context_length)
+        log_to_file(log_file_name, f"Assistant: {generated_response}")
 
     chat_loop(log_file_name, end_token, model, tokenizer, context_length, num_chars_to_generate=context_length, epochs=epochs, batch_size=batch_size)
 
