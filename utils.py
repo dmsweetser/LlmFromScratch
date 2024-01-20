@@ -15,7 +15,7 @@ def log_to_file(log_file_name, message):
     with open(log_file_name, "a") as log_file:
         log_file.write(log_entry)
 
-def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.5):
+def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0):
     start_time = time.time()
 
     generated_text = seed_text
