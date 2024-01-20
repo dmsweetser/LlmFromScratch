@@ -15,7 +15,7 @@ def log_to_file(log_file_name, message):
     with open(log_file_name, "a") as log_file:
         log_file.write(log_entry)
 
-def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.5):
+def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87):
     start_time = time.time()
 
     generated_text = seed_text
@@ -164,15 +164,16 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
 
 def main():
     os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-    end_token = '¤'
-    delimiter = '^'
+    end_token = '[e]'
+    delimiter = '[m]'
 
     text_data_arr = [
         f"your name {delimiter} bob {end_token}".lower(),
     ]
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    log_file_name = f"chat_log_{current_date}.txt"
+    current_ticks = str(time.time()).replace(".", "_")
+    log_file_name = f"chat_log_{current_date}_{current_ticks}.txt"
 
     context_length = 512
     embedding_dim = 64
@@ -184,7 +185,7 @@ def main():
     epochs = 250
     batch_size = 32
 
-    tokenizer = Tokenizer(lower=True)
+    tokenizer = Tokenizer(lower=True, filters='')
 
     if os.path.exists("model.keras"):
         model = tf.keras.models.load_model("model.keras")
