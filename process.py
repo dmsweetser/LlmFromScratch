@@ -150,6 +150,7 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
                 log_to_file(log_file_name, "Trained existing model with new data")
 
                 model.save("model.keras")
+                tokenizer.save("tokenizer.pkl")
                 log_to_file(log_file_name, "Saved the trained model as model.keras")
         else:
             # Update the training data with the new question and answer
@@ -160,6 +161,7 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
             log_to_file(log_file_name, "Trained a new model")
 
             model.save("model.keras")
+            tokenizer.save("tokenizer.pkl")
             log_to_file(log_file_name, "Saved the trained model as model.keras")
 
 def main():
@@ -177,18 +179,19 @@ def main():
 
     context_length = 512
     embedding_dim = 64
-    lstm_units = 32
-    hidden_dim = 32
+    lstm_units = 128
+    hidden_dim = 128
     vocab_size = 50000
     n_layers = 32
 
-    epochs = 250
+    epochs = 30
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True, filters='')
 
     if os.path.exists("model.keras"):
         model = tf.keras.models.load_model("model.keras")
+        tokenizer.load("tokenizer.pkl")
         log_to_file(log_file_name, f"Loaded existing model: model.keras")
     else:
         input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
@@ -196,6 +199,7 @@ def main():
         train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
         log_to_file(log_file_name, "Trained a new model")
         model.save("model.keras")
+        tokenizer.save("tokenizer.pkl")
         log_to_file(log_file_name, "Saved the trained model as model.keras")
 
     chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimiter, num_chars_to_generate=context_length, epochs=epochs, batch_size=batch_size)
