@@ -41,16 +41,14 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
                 output_word = word
                 break
 
-        print(output_word, end='')
-
         if output_word != "":
             result += output_word + " "
             if output_word == end_token:
-                print(f"Detected end token '{end_token}'. Ending generation.")
+                log_to_file(log_file_name, f"Detected end token '{end_token}'. Ending generation.")
                 break
 
             generated_text += " " + output_word
-            print(f"Current Result: {result}")
+            log_to_file(log_file_name, f"Current Result: {result}")
 
     end_time = time.time()
     time_taken = end_time - start_time
@@ -79,7 +77,7 @@ def create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_d
 
     return model
 
-def preprocess_data(text_data_arr, tokenizer, context_length, delimiter):
+def preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name):
     tokenizer.fit_on_texts(text_data_arr)
     sequences = tokenizer.texts_to_sequences(text_data_arr)
 
@@ -91,15 +89,15 @@ def preprocess_data(text_data_arr, tokenizer, context_length, delimiter):
         parts = original_text.split(delimiter)
         question, answer = parts[0], parts[1]
 
-        print("Original Text:", original_text)
-        print("Question:", question)
-        print("Answer:", answer)
+        log_to_file(log_file_name, f"Original Text: {original_text}")
+        log_to_file(log_file_name, f"Question: {question}")
+        log_to_file(log_file_name, f"Answer: {answer}")
 
         question_sequence = tokenizer.texts_to_sequences([question])[0]
         answer_sequence = tokenizer.texts_to_sequences([answer])[0]
 
-        print("Question Sequence:", question_sequence)
-        print("Answer Sequence:", answer_sequence)
+        log_to_file(log_file_name, f"Question Sequence: {question_sequence}")
+        log_to_file(log_file_name, f"Answer Sequence: {answer_sequence}")
 
         for i in range(1, len(answer_sequence) + 1):
             input_sequence = question_sequence + answer_sequence[:i]
@@ -110,14 +108,14 @@ def preprocess_data(text_data_arr, tokenizer, context_length, delimiter):
             input_sequences.append(input_padding)
             output_sequences.append(output_sequence)
 
-    print("Input Sequences Shape:", np.array(input_sequences).shape)
-    print("Output Sequences Shape:", np.array(output_sequences).shape)
+    log_to_file(log_file_name, f"Input Sequences Shape: {np.array(input_sequences).shape}")
+    log_to_file(log_file_name, f"Output Sequences Shape: {np.array(output_sequences).shape}")
 
     return np.array(input_sequences), np.array(output_sequences)
 
-def train_model(model, input_sequences, output_sequences, epochs, batch_size):
-    print("Input Sequences Shape:", input_sequences.shape)
-    print("Output Sequences Shape:", output_sequences.shape)
+def train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name):
+    log_to_file(log_file_name, f"Input Sequences Shape: {input_sequences.shape}")
+    log_to_file(log_file_name, f"Output Sequences Shape: {output_sequences.shape}")
     model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
 
 def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimiter, num_chars_to_generate, epochs, batch_size):
@@ -130,24 +128,35 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
         user_question = input("You: ")
         log_to_file(log_file_name, f"User: {user_question}")
 
-        # Generate a response using the model
-        generated_response = generate_text(log_file_name, end_token, user_question, model, tokenizer, context_length, num_chars_to_generate=context_length)
-        print("Assistant:", generated_response)
-        log_to_file(log_file_name, f"Assistant: {generated_response}")
+        if delimiter not in user_question:
+            # Generate a response using the model
+            generated_response = generate_text(log_file_name, end_token, user_question.lower(), model, tokenizer, context_length, num_chars_to_generate=context_length)
+            log_to_file(log_file_name, f"Assistant: {generated_response}")
 
-        # Ask if the answer is good or bad
-        user_feedback = input("Is the answer good or bad? (Type 'good' or 'bad'): ")
-        log_to_file(log_file_name, f"User Feedback: {user_feedback}")
+            # Ask if the answer is good or bad
+            print(f"Assistant: {generated_response}")
+            user_feedback = input("Is the answer good or bad? (Type 'good' or 'bad'): ")
+            log_to_file(log_file_name, f"User Feedback: {user_feedback}")
 
-        if user_feedback.lower() == 'bad':
-            # Ask for the correct answer
-            correct_answer = input("How should I have answered? Enter the correct response: ")
-            log_to_file(log_file_name, f"Correct Answer: {correct_answer}")
+            if user_feedback.lower() == 'bad':
+                # Ask for the correct answer
+                correct_answer = input("How should I have answered? Enter the correct response: ")
+                log_to_file(log_file_name, f"Correct Answer: {correct_answer}")
 
+                # Update the training data with the new question and answer
+                text_data_arr = [f"{user_question} {delimiter} {correct_answer} {end_token}".lower()]
+                input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
+                train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
+                log_to_file(log_file_name, "Trained existing model with new data")
+
+                model.save("model.keras")
+                log_to_file(log_file_name, "Saved the trained model as model.keras")
+        else:
             # Update the training data with the new question and answer
-            text_data_arr = [f"{user_question}{delimiter}{correct_answer}{end_token}"]
-            input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter)
-            train_model(model, input_sequences, output_sequences, epochs, batch_size)
+            log_to_file(log_file_name, f"Auto-training with new input: {user_question}")
+            text_data_arr = [f"{user_question} {end_token}".lower()]
+            input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
+            train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
             log_to_file(log_file_name, "Trained a new model")
 
             model.save("model.keras")
@@ -155,24 +164,24 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
 
 def main():
     os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-    end_token = '[END]'
-    delimiter = '[?]'
+    end_token = '¤'
+    delimiter = '^'
 
     text_data_arr = [
-        f"your name{delimiter}bob{end_token}",
+        f"your name {delimiter} bob {end_token}".lower(),
     ]
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     log_file_name = f"chat_log_{current_date}.txt"
 
     context_length = 512
-    embedding_dim = 32
-    lstm_units = 8
-    hidden_dim = 8
+    embedding_dim = 64
+    lstm_units = 128
+    hidden_dim = 128
     vocab_size = 50000
     n_layers = 32
 
-    epochs = 150
+    epochs = 32
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True)
@@ -181,9 +190,9 @@ def main():
         model = tf.keras.models.load_model("model.keras")
         log_to_file(log_file_name, f"Loaded existing model: model.keras")
     else:
-        input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter)
+        input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
         model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
-        train_model(model, input_sequences, output_sequences, epochs, batch_size)
+        train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
         log_to_file(log_file_name, "Trained a new model")
         model.save("model.keras")
         log_to_file(log_file_name, "Saved the trained model as model.keras")
