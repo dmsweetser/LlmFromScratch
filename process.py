@@ -176,12 +176,12 @@ def main():
 
     context_length = 512
     embedding_dim = 64
-    lstm_units = 128
-    hidden_dim = 128
+    lstm_units = 32
+    hidden_dim = 32
     vocab_size = 50000
     n_layers = 32
 
-    epochs = 32
+    epochs = 250
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True)
