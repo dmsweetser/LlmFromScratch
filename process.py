@@ -165,7 +165,9 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
                 log_to_file(log_file_name, "Trained existing model with new data")
 
                 model.save("model.keras")
-                tokenizer.save("tokenizer.pkl")
+                tokenizer_config = tokenizer.to_json()
+                with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+                    json_file.write(tokenizer_config)
                 log_to_file(log_file_name, "Saved the trained model as model.keras")
         else:
             # Update the training data with the new question and answer
@@ -176,7 +178,9 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
             log_to_file(log_file_name, "Trained a new model")
 
             model.save("model.keras")
-            tokenizer.save("tokenizer.pkl")
+            tokenizer_config = tokenizer.to_json()
+            with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+                json_file.write(tokenizer_config)
             log_to_file(log_file_name, "Saved the trained model as model.keras")
 
 def main():
@@ -206,7 +210,10 @@ def main():
 
     if os.path.exists("model.keras"):
         model = tf.keras.models.load_model("model.keras")
-        tokenizer.load("tokenizer.pkl")
+        tokenizer_config_path = "tokenizer_config.json"
+        with open(tokenizer_config_path, "r", encoding="utf-8") as json_file:
+            tokenizer_config = json.load(json_file)
+        tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config)
         log_to_file(log_file_name, f"Loaded existing model: model.keras")
     else:
         input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
@@ -214,7 +221,9 @@ def main():
         train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
         log_to_file(log_file_name, "Trained a new model")
         model.save("model.keras")
-        tokenizer.save("tokenizer.pkl")
+        tokenizer_config = tokenizer.to_json()
+        with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+            json_file.write(tokenizer_config)        
         log_to_file(log_file_name, "Saved the trained model as model.keras")
 
     chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimiter, num_chars_to_generate=context_length, epochs=epochs, batch_size=batch_size)
