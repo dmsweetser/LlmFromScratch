@@ -9,267 +9,267 @@ import datetime
 import time
 import json
 
-training_data_file = "training_data.json"
-logs_folder = "logs"
+class ChatBot:
+    def __init__(self):
+        self.training_data_file = "training_data.json"
+        self.logs_folder = "logs"
 
-def log_to_file(log_file_path, message):
-    timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
-    log_entry = f"{timestamp} {message}\n"
+        os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-    with open(log_file_path, "a") as log_file:
-        log_file.write(log_entry)
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        current_ticks = str(time.time()).replace(".", "_")
+        self.log_file_name = os.path.join(self.logs_folder, f"chat_log_{current_date}_{current_ticks}.txt")
 
-def generate_text(log_file_path, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87):
-    start_time = time.time()
+        # Create the logs folder if it doesn't exist
+        os.makedirs(self.logs_folder, exist_ok=True)
 
-    generated_text = seed_text
-    result = ""
+        self.end_token = '[e]'
+        self.delimiter = '[m]'
+        self.context_length = 2048
+        self.embedding_dim = 64
+        self.lstm_units = 128
+        self.hidden_dim = 128
+        self.n_layers = 2
+        self.epochs = 5
+        self.batch_size = 32
+        self.num_chars_to_generate = self.context_length
+        self.tokenizer = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@\\^_`{|}~\t\n',)
+        self.model = self.load_or_train_model()
 
-    for _ in range(num_chars_to_generate):
-        token_list = tokenizer.texts_to_sequences([generated_text])[0]
-        token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
+    def log_to_file(self, message):
+        timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
+        log_entry = f"{timestamp} {message}\n"
 
-        predicted_probs = model.predict(token_list, verbose=0)[0]
+        with open(self.log_file_name, "a") as log_file:
+            log_file.write(log_entry)
 
-        predicted_probs = np.log(predicted_probs) / temperature
-        exp_preds = np.exp(predicted_probs)
-        predicted_probs = exp_preds / np.sum(exp_preds)
+    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87):
+        start_time = time.time()
 
-        # Calculate predicted token within the valid range of word_index
-        valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1)]
-        print(f"Valid Predicted Tokens: {valid_predicted_tokens}")
-        print(f"Predicted Probabilities: {predicted_probs}")
+        generated_text = seed_text
+        result = ""
 
-        # Ensure predicted_probs sum to 1
-        predicted_probs /= np.sum(predicted_probs)
+        for _ in range(num_chars_to_generate):
+            token_list = tokenizer.texts_to_sequences([generated_text])[0]
+            token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
 
-        # Calculate predicted token without using np.random.choice
-        predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1))
+            predicted_probs = model.predict(token_list, verbose=0)[0]
 
-        print(f"Predicted Token: {predicted_token}")
+            predicted_probs = np.log(predicted_probs) / temperature
+            exp_preds = np.exp(predicted_probs)
+            predicted_probs = exp_preds / np.sum(exp_preds)
 
-        # Find the corresponding word for the predicted token
-        output_word = tokenizer.index_word.get(predicted_token, "")
+            # Calculate predicted token within the valid range of word_index
+            valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1)]
+            print(f"Valid Predicted Tokens: {valid_predicted_tokens}")
+            print(f"Predicted Probabilities: {predicted_probs}")
 
-        print(f"Output Word: {output_word}")
+            # Ensure predicted_probs sum to 1
+            predicted_probs /= np.sum(predicted_probs)
 
-        if output_word != "":
-            result += output_word + " "
-            if output_word == end_token:
-                log_to_file(log_file_path, f"Detected end token '{end_token}'. Ending generation.")
-                break
+            # Calculate predicted token without using np.random.choice
+            predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1))
 
-            generated_text += " " + output_word
-            log_to_file(log_file_path, f"Current Result: {result}")
+            print(f"Predicted Token: {predicted_token}")
 
-    end_time = time.time()
-    time_taken = end_time - start_time
-    log_to_file(log_file_path, f"Time taken for text generation: {time_taken} seconds")
+            # Find the corresponding word for the predicted token
+            output_word = tokenizer.index_word.get(predicted_token, "")
 
-    return result
+            print(f"Output Word: {output_word}")
 
-'''
-MODEL DESCRIPTION
+            if output_word != "":
+                result += output_word + " "
+                if output_word == end_token:
+                    self.log_to_file(f"Detected end token '{end_token}'. Ending generation.")
+                    break
 
-Imagine your model is like a storyteller, and it's really good at understanding and creating stories. The stories are made up of words, and each word has its own special meaning. The model's job is to learn how to tell stories by understanding the patterns and relationships between these words.
+                generated_text += " " + output_word
+                self.log_to_file(f"Current Result: {result}")
 
-Now, think of the Embedding layer as a magical dictionary that helps the storyteller understand the meaning of each word. When the storyteller reads a word, it looks up the word in this magical dictionary and gets a special code that represents the word's meaning. This code is like a secret language that the storyteller and the dictionary use to communicate.
+        end_time = time.time()
+        time_taken = end_time - start_time
+        self.log_to_file(f"Time taken for text generation: {time_taken} seconds")
 
-In our story, the storyteller (model) wants to create really interesting and detailed stories. So, it has a special trick called Bidirectional LSTM. This is like having a friend who reads the story from the beginning to the end and another friend who reads it from the end to the beginning. They both share their understanding, and it helps the storyteller catch all the important details and connections in the story.
+        return result
 
-Then, there's an Attention mechanism, which is like a spotlight that the storyteller uses to focus on the most exciting parts of the story. It helps the storyteller pay extra attention to important details.
+    '''
+    MODEL DESCRIPTION
 
-After that, there's a Convolutional layer, which is like a chef adding some spice to the story. It enhances certain aspects of the story to make it more flavorful and interesting.
+    Imagine your model is like a storyteller, and it's really good at understanding and creating stories. The stories are made up of words, and each word has its own special meaning. The model's job is to learn how to tell stories by understanding the patterns and relationships between these words.
 
-The BatchNormalization is like having a helper who ensures that everything stays in order and doesn't get too messy. It helps keep the story well-balanced.
+    Now, think of the Embedding layer as a magical dictionary that helps the storyteller understand the meaning of each word. When the storyteller reads a word, it looks up the word in this magical dictionary and gets a special code that represents the word's meaning. This code is like a secret language that the storyteller and the dictionary use to communicate.
 
-Now, the GRU (Gated Recurrent Unit) is like having another set of friends who remember bits of the story and share them with the storyteller. They work together to make sure no part of the story is forgotten.
+    In our story, the storyteller (model) wants to create really interesting and detailed stories. So, it has a special trick called Bidirectional LSTM. This is like having a friend who reads the story from the beginning to the end and another friend who reads it from the end to the beginning. They both share their understanding, and it helps the storyteller catch all the important details and connections in the story.
 
-Finally, the storyteller puts everything together and tells the story. The Dense layer is like the storyteller organizing all the information and presenting it in a way that makes sense.
+    Then, there's an Attention mechanism, which is like a spotlight that the storyteller uses to focus on the most exciting parts of the story. It helps the storyteller pay extra attention to important details.
 
-So, in a nutshell, the model is like a storyteller with magical dictionaries, friends who read in both directions, spotlights, chefs, helpers, and memory-keeping friends. All of them work together to create the best and most exciting stories!
-'''
+    After that, there's a Convolutional layer, which is like a chef adding some spice to the story. It enhances certain aspects of the story to make it more flavorful and interesting.
 
-def create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
-    sequence_input = Input(shape=(context_length,), dtype='int32')
-    embedded_sequence = Embedding(vocab_size, embedding_dim, input_length=context_length)(sequence_input)
+    The BatchNormalization is like having a helper who ensures that everything stays in order and doesn't get too messy. It helps keep the story well-balanced.
 
-    lstm_output = embedded_sequence
-    for _ in range(n_layers):
-        lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(lstm_output)
+    Now, the GRU (Gated Recurrent Unit) is like having another set of friends who remember bits of the story and share them with the storyteller. They work together to make sure no part of the story is forgotten.
 
-    attention_output = Attention()([lstm_output, lstm_output])
-    conv_output = Conv1D(filters=hidden_dim, kernel_size=3, activation='relu')(attention_output)
-    pooled_output = MaxPooling1D(pool_size=2)(conv_output)
-    normalized_output = BatchNormalization()(pooled_output)
-    gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
+    Finally, the storyteller puts everything together and tells the story. The Dense layer is like the storyteller organizing all the information and presenting it in a way that makes sense.
 
-    lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
-    dense_output = Dense(hidden_dim, activation='relu')(lstm_attention_output)
-    dropout_output = Dropout(0.2)(dense_output)
-    output = Dense(vocab_size, activation='softmax')(dropout_output)
+    So, in a nutshell, the model is like a storyteller with magical dictionaries, friends who read in both directions, spotlights, chefs, helpers, and memory-keeping friends. All of them work together to create the best and most exciting stories!
+    '''
+    def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
 
-    model = Model(inputs=sequence_input, outputs=output)
-    model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+        sequence_input = Input(shape=(context_length,), dtype='int32')
+        embedded_sequence = Embedding(vocab_size, embedding_dim, input_length=context_length)(sequence_input)
 
-    return model
+        lstm_output = embedded_sequence
 
-def preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name):
-    # Load existing training data from the JSON file if it exists
-    existing_data = []
-    if os.path.exists(training_data_file):
-        with open(training_data_file, 'r') as json_file:
-            existing_data = json.load(json_file)
+        for _ in range(n_layers):
+            lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(lstm_output)
+            attention_output = Attention()([lstm_output, lstm_output])
+            conv_output = Conv1D(filters=hidden_dim, kernel_size=3, activation='relu')(attention_output)
+            pooled_output = MaxPooling1D(pool_size=2)(conv_output)
+            normalized_output = BatchNormalization()(pooled_output)
+            gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
 
-    # Append new data to existing data
-    all_text_data_arr = existing_data + text_data_arr
+        lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
+        dense_output = Dense(hidden_dim, activation='relu')(lstm_attention_output)
+        dropout_output = Dropout(0.2)(dense_output)
+        output = Dense(vocab_size, activation='softmax')(dropout_output)
 
-    # Update the tokenizer with the combined dataset
-    tokenizer.fit_on_texts(all_text_data_arr)
-    sequences = tokenizer.texts_to_sequences(all_text_data_arr)
+        model = Model(inputs=sequence_input, outputs=output)
+        model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-    vocab_size = len(tokenizer.word_index) + 1  # Adding 1 for the padding token
+        return model
 
-    input_sequences = []
-    output_sequences = []
+    def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):
+        # Load existing training data from the JSON file if it exists
+        existing_data = []
+        if os.path.exists(self.training_data_file):
+            with open(self.training_data_file, 'r') as json_file:
+                existing_data = json.load(json_file)
 
-    for seq in sequences:
-        original_text = text_data_arr[sequences.index(seq)]
-        parts = original_text.split(delimiter)
-        question, answer = parts[0], parts[1]
+        # Append new data to existing data
+        all_text_data_arr = existing_data + text_data_arr
 
-        log_to_file(log_file_name, f"Original Text: {original_text}")
-        log_to_file(log_file_name, f"Question: {question}")
-        log_to_file(log_file_name, f"Answer: {answer}")
+        # Update the tokenizer with the combined dataset
+        tokenizer.fit_on_texts(all_text_data_arr)
+        sequences = tokenizer.texts_to_sequences(all_text_data_arr)
 
-        question_sequence = tokenizer.texts_to_sequences([question])[0]
-        answer_sequence = tokenizer.texts_to_sequences([answer])[0]
+        vocab_size = len(tokenizer.word_index) + 1  # Adding 1 for the padding token
 
-        log_to_file(log_file_name, f"Question Sequence: {question_sequence}")
-        log_to_file(log_file_name, f"Answer Sequence: {answer_sequence}")
-
-        for i in range(1, len(answer_sequence) + 1):
-            input_sequence = question_sequence + answer_sequence[:i]
-            input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
-
-            output_sequence = answer_sequence[i - 1]
-
-            input_sequences.append(input_padding)
-            output_sequences.append(output_sequence)
-
-    log_to_file(log_file_name, f"Input Sequences Shape: {np.array(input_sequences).shape}")
-    log_to_file(log_file_name, f"Output Sequences Shape: {np.array(output_sequences).shape}")
-
-    # Save training data to JSON file
-    with open(training_data_file, 'w') as json_file:
-        json.dump(text_data_arr, json_file)
-
-    return np.array(input_sequences), np.array(output_sequences), vocab_size
-
-def train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name):
-    log_to_file(log_file_name, f"Input Sequences Shape: {input_sequences.shape}")
-    log_to_file(log_file_name, f"Output Sequences Shape: {output_sequences.shape}")
-    model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
-
-def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimiter, num_chars_to_generate, epochs, batch_size):
-    while True:
-
-        # Initialize empty lists for input and output sequences
         input_sequences = []
         output_sequences = []
 
-        user_question = input("You: ")
-        log_to_file(log_file_name, f"User: {user_question}")
+        for seq in sequences:
+            original_text = text_data_arr[sequences.index(seq)]
+            parts = original_text.split(delimiter)
+            question, answer = parts[0], parts[1]
 
-        if delimiter not in user_question:
-            # Generate a response using the model
-            generated_response = generate_text(log_file_name, end_token, user_question.lower(), model, tokenizer, context_length, num_chars_to_generate=context_length)
-            log_to_file(log_file_name, f"Assistant: {generated_response}")
+            self.log_to_file(f"Original Text: {original_text}")
+            self.log_to_file(f"Question: {question}")
+            self.log_to_file(f"Answer: {answer}")
 
-            # Ask if the answer is good or bad
-            print(f"Assistant: {generated_response}")
-            user_feedback = input("Is the answer good or bad? (Type 'good' or 'bad'): ")
-            log_to_file(log_file_name, f"User Feedback: {user_feedback}")
+            question_sequence = tokenizer.texts_to_sequences([question])[0]
+            answer_sequence = tokenizer.texts_to_sequences([answer])[0]
 
-            if user_feedback.lower() == 'bad':
-                # Ask for the correct answer
-                correct_answer = input("How should I have answered? Enter the correct response: ")
-                log_to_file(log_file_name, f"Correct Answer: {correct_answer}")
+            self.log_to_file(f"Question Sequence: {question_sequence}")
+            self.log_to_file(f"Answer Sequence: {answer_sequence}")
 
-                # Update the training data with the new question and answer
-                text_data_arr = [f"{user_question} {delimiter} {correct_answer} {end_token}".lower()]
-                input_sequences, output_sequences, vocab_size = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
-                model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
-                train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
-                log_to_file(log_file_name, "Trained existing model with new data")
+            for i in range(1, len(answer_sequence) + 1):
+                input_sequence = question_sequence + answer_sequence[:i]
+                input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
 
-                model.save("model.keras")
-                tokenizer_config = tokenizer.to_json()
-                with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
-                    json_file.write(tokenizer_config)
-                log_to_file(log_file_name, "Saved the trained model as model.keras")
+                output_sequence = answer_sequence[i - 1]
+
+                input_sequences.append(input_padding)
+                output_sequences.append(output_sequence)
+
+        self.log_to_file(f"Input Sequences Shape: {np.array(input_sequences).shape}")
+        self.log_to_file(f"Output Sequences Shape: {np.array(output_sequences).shape}")
+
+        # Save training data to JSON file
+        with open(self.training_data_file, 'w') as json_file:
+            json.dump(text_data_arr, json_file)
+
+        return np.array(input_sequences), np.array(output_sequences), vocab_size
+
+    def train_model(self, model, input_sequences, output_sequences, epochs, batch_size):
+        self.log_to_file(f"Input Sequences Shape: {input_sequences.shape}")
+        self.log_to_file(f"Output Sequences Shape: {output_sequences.shape}")
+        model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
+
+    def load_or_train_model(self):
+        if os.path.exists("model.keras"):
+            model = tf.keras.models.load_model("model.keras")
+            tokenizer_config_path = "tokenizer_config.json"
+            with open(tokenizer_config_path, "r", encoding="utf-8") as json_file:
+                tokenizer_config_str = json_file.read()
+            tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
+            self.log_to_file(f"Loaded existing model: model.keras")
         else:
-            # Update the training data with the new question and answer
-            log_to_file(log_file_name, f"Auto-training with new input: {user_question}")
-            text_data_arr = [f"{user_question} {end_token}".lower()]
-            input_sequences, output_sequences, vocab_size = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
-            model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
-            train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
-            log_to_file(log_file_name, "Retrained existing model")
-
+            text_data_arr = [f"What is your name? {self.delimiter} My name is Bob. {self.end_token}"]
+            input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
+            model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
+            self.train_model(model, input_sequences, output_sequences, self.epochs, self.batch_size)
+            self.log_to_file("Trained a new model")
             model.save("model.keras")
-            tokenizer_config = tokenizer.to_json()
+            tokenizer_config = self.tokenizer.to_json()
             with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
                 json_file.write(tokenizer_config)
-            log_to_file(log_file_name, "Saved the trained model as model.keras")
+            self.log_to_file("Saved the trained model as model.keras")
+        return model
 
-def main():
-    os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
-    end_token = '[e]'
-    delimiter = '[m]'
+    def chat_loop(self):
+        while True:
+            # Initialize empty lists for input and output sequences
+            input_sequences = []
+            output_sequences = []
 
-    text_data_arr = [
-        f"What is your name? {delimiter} My name is Bob. {end_token}".lower(),
-    ]
+            user_question = input("You: ")
+            self.log_to_file(f"User: {user_question}")
 
-    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    current_ticks = str(time.time()).replace(".", "_")
-    log_file_name = f"{logs_folder}/chat_log_{current_date}_{current_ticks}.txt"
+            if self.delimiter not in user_question:
+                # Generate a response using the model
+                generated_response = self.generate_text(self.end_token, user_question, self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+                self.log_to_file(f"Assistant: {generated_response}")
 
-    # Create the logs folder if it doesn't exist
-    if not os.path.exists(logs_folder):
-        os.makedirs(logs_folder)
+                # Ask if the answer is good or bad
+                print(f"Assistant: {generated_response}")
+                user_feedback = input("Is the answer good or bad? (Type 'good' or 'bad'): ")
+                self.log_to_file(f"User Feedback: {user_feedback}")
 
-    context_length = 2048
-    embedding_dim = 64
-    lstm_units = 128
-    hidden_dim = 128
-    n_layers = 2
+                if user_feedback.lower() == 'bad':
+                    # Ask for the correct answer
+                    correct_answer = input("How should I have answered? Enter the correct response: ")
+                    self.log_to_file(f"Correct Answer: {correct_answer}")
 
-    epochs = 5
-    batch_size = 32
+                    # Update the training data with the new question and answer
+                    text_data_arr = [f"{user_question} {self.delimiter} {correct_answer} {self.end_token}"]
+                    input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
+                    self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
+                    self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
+                    self.log_to_file("Trained existing model with new data")
 
-    tokenizer = Tokenizer(lower=True, filters='')
+                    self.model.save("model.keras")
+                    tokenizer_config = self.tokenizer.to_json()
+                    with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+                        json_file.write(tokenizer_config)
+                    self.log_to_file("Saved the trained model as model.keras")
+            else:
+                # Update the training data with the new question and answer
+                self.log_to_file(f"Auto-training with new input: {user_question}")
+                text_data_arr = [f"{user_question} {self.end_token}"]
+                input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
+                self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
+                self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
+                self.log_to_file("Retrained existing model")
 
-    if os.path.exists("model.keras"):
-        model = tf.keras.models.load_model("model.keras")
-        tokenizer_config_path = "tokenizer_config.json"
-        with open(tokenizer_config_path, "r", encoding="utf-8") as json_file:
-            tokenizer_config_str = json_file.read()
-        tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
-        log_to_file(log_file_name, f"Loaded existing model: model.keras")
-    else:
-        input_sequences, output_sequences, vocab_size = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
-        model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
-        train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
-        log_to_file(log_file_name, "Trained a new model")
-        model.save("model.keras")
-        tokenizer_config = tokenizer.to_json()
-        with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
-            json_file.write(tokenizer_config)        
-        log_to_file(log_file_name, "Saved the trained model as model.keras")
+                self.model.save("model.keras")
+                tokenizer_config = self.tokenizer.to_json()
+                with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+                    json_file.write(tokenizer_config)
+                self.log_to_file("Saved the trained model as model.keras")
 
-    chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimiter, num_chars_to_generate=context_length, epochs=epochs, batch_size=batch_size)
+    def main(self):
+        self.chat_loop()
 
 if __name__ == "__main__":
-    main()
+    chat_bot = ChatBot()
+    chat_bot.main()
