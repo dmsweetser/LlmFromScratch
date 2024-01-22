@@ -9,7 +9,7 @@ import datetime
 import time
 import json
 
-class ChatBot:
+class BobTheBot:
     def __init__(self):
         self.training_data_file = "training_data.json"
         self.logs_folder = "logs"
@@ -271,5 +271,5 @@ class ChatBot:
         self.chat_loop()
 
 if __name__ == "__main__":
-    chat_bot = ChatBot()
-    chat_bot.main()
+    bob_the_bot = BobTheBot()
+    bob_the_bot.main()

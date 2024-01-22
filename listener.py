@@ -4,7 +4,7 @@ from gtts import gTTS
 import speech_recognition as sr
 
 def main():
-    chat_bot = ChatBot()
+    bob_the_bot = BobTheBot()
     recognizer = sr.Recognizer()
 
     for phrase in speech:
@@ -15,7 +15,7 @@ def main():
             question = text.lower().split("hey bob", 1)[1].strip()
 
             # Generate a response using the chatbot
-            response = chat_bot.generate_text(log_file_path, chat_bot.end_token, question.lower(), chat_bot.model, chat_bot.tokenizer, chat_bot.context_length, num_chars_to_generate=chat_bot.context_length)
+            response = bob_the_bot.generate_text(log_file_path, bob_the_bot.end_token, question.lower(), bob_the_bot.model, bob_the_bot.tokenizer, bob_the_bot.context_length, num_chars_to_generate=bob_the_bot.context_length)
 
             # Text-to-speech for the chatbot response
             tts_result = gTTS(text=response, lang='en')
@@ -42,7 +42,7 @@ def main():
                 # Listening for correction
                 correction_audio = recognizer.listen(source, timeout=5)
                 correction_text = recognizer.recognize_google(correction_audio).strip()
-                chat_bot.process_correction(question, correction_text)
+                bob_the_bot.process_correction(question, correction_text)
                 print("Processed correction. Back to normal listening...")
 
 if __name__ == "__main__":
