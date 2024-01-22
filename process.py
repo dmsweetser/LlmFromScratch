@@ -1,5 +1,5 @@
-import numpy as np
 import os
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Embedding, LSTM, Attention, Bidirectional, GRU, Conv1D, MaxPooling1D, BatchNormalization, Dense, Dropout
 from tensorflow.keras.models import Model
@@ -10,15 +10,16 @@ import time
 import json
 
 training_data_file = "training_data.json"
+logs_folder = "logs"
 
-def log_to_file(log_file_name, message):
+def log_to_file(log_file_path, message):
     timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
     log_entry = f"{timestamp} {message}\n"
 
-    with open(log_file_name, "a") as log_file:
+    with open(log_file_path, "a") as log_file:
         log_file.write(log_entry)
 
-def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87):
+def generate_text(log_file_path, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87):
     start_time = time.time()
 
     generated_text = seed_text
@@ -36,7 +37,16 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
 
         # Calculate predicted token within the valid range of word_index
         valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1)]
-        predicted_token = np.random.choice(valid_predicted_tokens, p=predicted_probs / np.sum(predicted_probs))
+        print(f"Valid Predicted Tokens: {valid_predicted_tokens}")
+        print(f"Predicted Probabilities: {predicted_probs}")
+
+        # Ensure predicted_probs sum to 1
+        predicted_probs /= np.sum(predicted_probs)
+
+        # Calculate predicted token without using np.random.choice
+        predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1))
+
+        print(f"Predicted Token: {predicted_token}")
 
         # Find the corresponding word for the predicted token
         output_word = tokenizer.index_word.get(predicted_token, "")
@@ -44,33 +54,58 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
         if output_word != "":
             result += output_word + " "
             if output_word == end_token:
-                log_to_file(log_file_name, f"Detected end token '{end_token}'. Ending generation.")
+                log_to_file(log_file_path, f"Detected end token '{end_token}'. Ending generation.")
                 break
 
             generated_text += " " + output_word
-            log_to_file(log_file_name, f"Current Result: {result}")
+            log_to_file(log_file_path, f"Current Result: {result}")
 
     end_time = time.time()
     time_taken = end_time - start_time
-    log_to_file(log_file_name, f"Time taken for text generation: {time_taken} seconds")
+    log_to_file(log_file_path, f"Time taken for text generation: {time_taken} seconds")
 
     return result
+
+'''
+MODEL DESCRIPTION
+
+Imagine your model is like a storyteller, and it's really good at understanding and creating stories. The stories are made up of words, and each word has its own special meaning. The model's job is to learn how to tell stories by understanding the patterns and relationships between these words.
+
+Now, think of the Embedding layer as a magical dictionary that helps the storyteller understand the meaning of each word. When the storyteller reads a word, it looks up the word in this magical dictionary and gets a special code that represents the word's meaning. This code is like a secret language that the storyteller and the dictionary use to communicate.
+
+In our story, the storyteller (model) wants to create really interesting and detailed stories. So, it has a special trick called Bidirectional LSTM. This is like having a friend who reads the story from the beginning to the end and another friend who reads it from the end to the beginning. They both share their understanding, and it helps the storyteller catch all the important details and connections in the story.
+
+Then, there's an Attention mechanism, which is like a spotlight that the storyteller uses to focus on the most exciting parts of the story. It helps the storyteller pay extra attention to important details.
+
+After that, there's a Convolutional layer, which is like a chef adding some spice to the story. It enhances certain aspects of the story to make it more flavorful and interesting.
+
+The BatchNormalization is like having a helper who ensures that everything stays in order and doesn't get too messy. It helps keep the story well-balanced.
+
+Now, the GRU (Gated Recurrent Unit) is like having another set of friends who remember bits of the story and share them with the storyteller. They work together to make sure no part of the story is forgotten.
+
+Finally, the storyteller puts everything together and tells the story. The Dense layer is like the storyteller organizing all the information and presenting it in a way that makes sense.
+
+So, in a nutshell, the model is like a storyteller with magical dictionaries, friends who read in both directions, spotlights, chefs, helpers, and memory-keeping friends. All of them work together to create the best and most exciting stories!
+'''
 
 def create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
     sequence_input = Input(shape=(context_length,), dtype='int32')
     embedded_sequence = Embedding(vocab_size, embedding_dim, input_length=context_length)(sequence_input)
 
+    lstm_output = embedded_sequence
     for _ in range(n_layers):
-        lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(embedded_sequence)
-        attention_output = Attention()([lstm_output, lstm_output])
-        conv_output = Conv1D(filters=hidden_dim, kernel_size=3, activation='relu')(attention_output)
-        pooled_output = MaxPooling1D(pool_size=2)(conv_output)
-        normalized_output = BatchNormalization()(pooled_output)
-        gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
-        lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
-        dense_output = Dense(hidden_dim, activation='relu')(lstm_attention_output)
-        dropout_output = Dropout(0.2)(dense_output)
-        output = Dense(vocab_size, activation='softmax')(dropout_output)
+        lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(lstm_output)
+
+    attention_output = Attention()([lstm_output, lstm_output])
+    conv_output = Conv1D(filters=hidden_dim, kernel_size=3, activation='relu')(attention_output)
+    pooled_output = MaxPooling1D(pool_size=2)(conv_output)
+    normalized_output = BatchNormalization()(pooled_output)
+    gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
+
+    lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
+    dense_output = Dense(hidden_dim, activation='relu')(lstm_attention_output)
+    dropout_output = Dropout(0.2)(dense_output)
+    output = Dense(vocab_size, activation='softmax')(dropout_output)
 
     model = Model(inputs=sequence_input, outputs=output)
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
@@ -174,7 +209,7 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
             text_data_arr = [f"{user_question} {end_token}".lower()]
             input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
             train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
-            log_to_file(log_file_name, "Trained a new model")
+            log_to_file(log_file_name, "Retrained existing model")
 
             model.save("model.keras")
             tokenizer_config = tokenizer.to_json()
@@ -193,14 +228,18 @@ def main():
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     current_ticks = str(time.time()).replace(".", "_")
-    log_file_name = f"chat_log_{current_date}_{current_ticks}.txt"
+    log_file_name = f"{logs_folder}/chat_log_{current_date}_{current_ticks}.txt"
+
+    # Create the logs folder if it doesn't exist
+    if not os.path.exists(logs_folder):
+        os.makedirs(logs_folder)
 
     context_length = 512
     embedding_dim = 64
     lstm_units = 128
     hidden_dim = 128
     vocab_size = 50000
-    n_layers = 32
+    n_layers = 2  # Reduced the number of layers for simplicity
 
     epochs = 5
     batch_size = 32
