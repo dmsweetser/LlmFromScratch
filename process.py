@@ -246,7 +246,7 @@ def main():
     hidden_dim = 128
     n_layers = 2
 
-    epochs = 5
+    epochs = 20
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True, filters='')
