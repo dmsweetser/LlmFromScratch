@@ -34,13 +34,12 @@ def generate_text(log_file_name, end_token, seed_text, model, tokenizer, sequenc
         exp_preds = np.exp(predicted_probs)
         predicted_probs = exp_preds / np.sum(exp_preds)
 
-        predicted_token = np.random.choice(len(predicted_probs), p=predicted_probs)
+        # Calculate predicted token within the valid range of word_index
+        valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1)]
+        predicted_token = np.random.choice(valid_predicted_tokens, p=predicted_probs / np.sum(predicted_probs))
 
-        output_word = ""
-        for word, index in tokenizer.word_index.items():
-            if index == predicted_token:
-                output_word = word
-                break
+        # Find the corresponding word for the predicted token
+        output_word = tokenizer.index_word.get(predicted_token, "")
 
         if output_word != "":
             result += output_word + " "
@@ -189,7 +188,7 @@ def main():
     delimiter = '[m]'
 
     text_data_arr = [
-        f"your name {delimiter} bob {end_token}".lower(),
+        f"What is your name? {delimiter} My name is Bob. {end_token}".lower(),
     ]
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -203,7 +202,7 @@ def main():
     vocab_size = 50000
     n_layers = 32
 
-    epochs = 30
+    epochs = 5
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True, filters='')
@@ -212,8 +211,8 @@ def main():
         model = tf.keras.models.load_model("model.keras")
         tokenizer_config_path = "tokenizer_config.json"
         with open(tokenizer_config_path, "r", encoding="utf-8") as json_file:
-            tokenizer_config = json.load(json_file)
-        tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config)
+            tokenizer_config_str = json_file.read()
+        tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
         log_to_file(log_file_name, f"Loaded existing model: model.keras")
     else:
         input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)

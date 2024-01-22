@@ -2,5 +2,6 @@ venv/
 __pycache__/
 model.*
 tokenizer.*
+tokenizer_config.*
 training_data.*
 chat_log*
