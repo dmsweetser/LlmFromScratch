@@ -240,13 +240,13 @@ def main():
     if not os.path.exists(logs_folder):
         os.makedirs(logs_folder)
 
-    context_length = 512
+    context_length = 2048
     embedding_dim = 64
     lstm_units = 128
     hidden_dim = 128
     n_layers = 2
 
-    epochs = 20
+    epochs = 5
     batch_size = 32
 
     tokenizer = Tokenizer(lower=True, filters='')
