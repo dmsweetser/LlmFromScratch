@@ -1,3 +1,6 @@
 tensorflow 
 pydot
 tensorflow_model_optimization
+pocketsphinx
+gtts
+speech_recognition

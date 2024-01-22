@@ -244,7 +244,7 @@ def main():
     embedding_dim = 64
     lstm_units = 128
     hidden_dim = 128
-    n_layers = 32
+    n_layers = 2
 
     epochs = 5
     batch_size = 32
