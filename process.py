@@ -51,6 +51,8 @@ def generate_text(log_file_path, end_token, seed_text, model, tokenizer, sequenc
         # Find the corresponding word for the predicted token
         output_word = tokenizer.index_word.get(predicted_token, "")
 
+        print(f"Output Word: {output_word}")
+
         if output_word != "":
             result += output_word + " "
             if output_word == end_token:
@@ -126,6 +128,8 @@ def preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_fil
     tokenizer.fit_on_texts(all_text_data_arr)
     sequences = tokenizer.texts_to_sequences(all_text_data_arr)
 
+    vocab_size = len(tokenizer.word_index) + 1  # Adding 1 for the padding token
+
     input_sequences = []
     output_sequences = []
 
@@ -160,7 +164,7 @@ def preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_fil
     with open(training_data_file, 'w') as json_file:
         json.dump(text_data_arr, json_file)
 
-    return np.array(input_sequences), np.array(output_sequences)
+    return np.array(input_sequences), np.array(output_sequences), vocab_size
 
 def train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name):
     log_to_file(log_file_name, f"Input Sequences Shape: {input_sequences.shape}")
@@ -194,7 +198,8 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
 
                 # Update the training data with the new question and answer
                 text_data_arr = [f"{user_question} {delimiter} {correct_answer} {end_token}".lower()]
-                input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
+                input_sequences, output_sequences, vocab_size = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
+                model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
                 train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
                 log_to_file(log_file_name, "Trained existing model with new data")
 
@@ -207,7 +212,8 @@ def chat_loop(log_file_name, end_token, model, tokenizer, context_length, delimi
             # Update the training data with the new question and answer
             log_to_file(log_file_name, f"Auto-training with new input: {user_question}")
             text_data_arr = [f"{user_question} {end_token}".lower()]
-            input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
+            input_sequences, output_sequences, vocab_size = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
+            model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
             train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
             log_to_file(log_file_name, "Retrained existing model")
 
@@ -238,8 +244,7 @@ def main():
     embedding_dim = 64
     lstm_units = 128
     hidden_dim = 128
-    vocab_size = 50000
-    n_layers = 2  # Reduced the number of layers for simplicity
+    n_layers = 32
 
     epochs = 5
     batch_size = 32
@@ -254,7 +259,7 @@ def main():
         tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
         log_to_file(log_file_name, f"Loaded existing model: model.keras")
     else:
-        input_sequences, output_sequences = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
+        input_sequences, output_sequences, vocab_size = preprocess_data(text_data_arr, tokenizer, context_length, delimiter, log_file_name)
         model = create_model(context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers)
         train_model(model, input_sequences, output_sequences, epochs, batch_size, log_file_name)
         log_to_file(log_file_name, "Trained a new model")
