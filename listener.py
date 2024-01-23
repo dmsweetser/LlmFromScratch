@@ -14,7 +14,8 @@ def main():
     def text_to_speech(text, filename):
         tts_result = gTTS(text=text, lang='en')
         tts_result.save(filename)
-        os.system(f"mpg321 {filename}")
+        os.system(f"ffmpeg -i {filename} -hide_banner -loglevel panic -acodec libmp3lame -aq 4 {filename}.mp3")
+        os.system(f"start {filename}.mp3")
 
     def listen_for_feedback():
         feedback_audio = recognizer.listen(source, timeout=5)
@@ -35,10 +36,10 @@ def main():
             response = bob_the_bot.generate_text(log_file_path, bob_the_bot.end_token, question.lower(), bob_the_bot.model, bob_the_bot.tokenizer, bob_the_bot.context_length, num_chars_to_generate=bob_the_bot.context_length)
 
             # Text-to-speech for the chatbot response
-            text_to_speech(response, "result.mp3")
+            text_to_speech(response, "result")
 
             # Text-to-speech for asking feedback
-            text_to_speech("Was the result good or bad?", "feedback.mp3")
+            text_to_speech("Was the result good or bad?", "feedback")
 
             # Listening for feedback
             feedback_text = listen_for_feedback()
@@ -47,7 +48,7 @@ def main():
                 print("Back to normal listening...")
             elif "bad" in feedback_text:
                 # Text-to-speech for asking correction
-                text_to_speech("Please provide the correct answer:", "correction.mp3")
+                text_to_speech("Please provide the correct answer:", "correction")
 
                 # Listening for correction
                 correction_text = listen_for_correction()
