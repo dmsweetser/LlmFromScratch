@@ -25,10 +25,10 @@ class BobTheBot:
 
         self.end_token = '[e]'
         self.delimiter = '[m]'
-        self.context_length = 256
-        self.embedding_dim = 128
-        self.lstm_units = 256
-        self.hidden_dim = 256
+        self.context_length = 512
+        self.embedding_dim = 512
+        self.lstm_units = 8
+        self.hidden_dim = 8
         self.n_layers = 2
         self.epochs = 50
         self.batch_size = 32
