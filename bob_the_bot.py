@@ -158,7 +158,7 @@ class BobTheBot:
         output_sequences = []
 
         for seq in sequences:
-            original_text = text_data_arr[sequences.index(seq)]
+            original_text = all_text_data_arr[sequences.index(seq)]
             parts = original_text.split(delimiter)
             question, answer = parts[0], parts[1]
 
@@ -186,7 +186,7 @@ class BobTheBot:
 
         # Save training data to JSON file
         with open(self.training_data_file, 'w') as json_file:
-            json.dump(text_data_arr, json_file)
+            json.dump(all_text_data_arr, json_file)
 
         return np.array(input_sequences), np.array(output_sequences), vocab_size
 
