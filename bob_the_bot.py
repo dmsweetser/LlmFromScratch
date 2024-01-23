@@ -30,7 +30,7 @@ class BobTheBot:
         self.lstm_units = 128
         self.hidden_dim = 128
         self.n_layers = 2
-        self.epochs = 5
+        self.epochs = 100
         self.batch_size = 32
         self.num_chars_to_generate = self.context_length
         self.tokenizer = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@\\^_`{|}~\t\n',)
@@ -162,15 +162,15 @@ class BobTheBot:
             parts = original_text.split(delimiter)
             question, answer = parts[0], parts[1]
 
-            self.log_to_file(f"Original Text: {original_text}")
-            self.log_to_file(f"Question: {question}")
-            self.log_to_file(f"Answer: {answer}")
+            self.log_to_file(f"PREPROCESSING - Original Text: {original_text}")
+            self.log_to_file(f"PREPROCESSING - Question: {question}")
+            self.log_to_file(f"PREPROCESSING - Answer: {answer}")
 
             question_sequence = tokenizer.texts_to_sequences([question])[0]
             answer_sequence = tokenizer.texts_to_sequences([answer])[0]
 
-            self.log_to_file(f"Question Sequence: {question_sequence}")
-            self.log_to_file(f"Answer Sequence: {answer_sequence}")
+            self.log_to_file(f"PREPROCESSING - Question Sequence: {question_sequence}")
+            self.log_to_file(f"PREPROCESSING - Answer Sequence: {answer_sequence}")
 
             for i in range(1, len(answer_sequence) + 1):
                 input_sequence = question_sequence + answer_sequence[:i]
@@ -181,8 +181,8 @@ class BobTheBot:
                 input_sequences.append(input_padding)
                 output_sequences.append(output_sequence)
 
-        self.log_to_file(f"Input Sequences Shape: {np.array(input_sequences).shape}")
-        self.log_to_file(f"Output Sequences Shape: {np.array(output_sequences).shape}")
+        self.log_to_file(f"PREPROCESSING - Input Sequences Shape: {np.array(input_sequences).shape}")
+        self.log_to_file(f"PREPROCESSING - Output Sequences Shape: {np.array(output_sequences).shape}")
 
         # Save training data to JSON file
         with open(self.training_data_file, 'w') as json_file:
@@ -204,7 +204,10 @@ class BobTheBot:
             tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
             self.log_to_file(f"Loaded existing model: model.keras")
         else:
-            text_data_arr = [f"What is your name? {self.delimiter} My name is Bob. {self.end_token}"]
+            text_data_arr = [
+                f"What is your name? {self.delimiter} My name is Bob. {self.end_token}",
+                f"What is 2 + 2? {self.delimiter} 2 + 2 = 4. {self.end_token}"
+                ]
             input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
             model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
             self.train_model(model, input_sequences, output_sequences, self.epochs, self.batch_size)
@@ -217,6 +220,12 @@ class BobTheBot:
         return model
 
     def chat_loop(self):
+
+        print("Initial tests")
+        generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        print("End initial tests")
+
         while True:
             # Initialize empty lists for input and output sequences
             input_sequences = []
