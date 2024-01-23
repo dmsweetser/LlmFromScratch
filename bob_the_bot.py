@@ -26,14 +26,14 @@ class BobTheBot:
         self.end_token = '[e]'
         self.delimiter = '[m]'
         self.context_length = 256
-        self.embedding_dim = 64
-        self.lstm_units = 128
-        self.hidden_dim = 128
-        self.n_layers = 4
-        self.epochs = 5
+        self.embedding_dim = 128
+        self.lstm_units = 256
+        self.hidden_dim = 256
+        self.n_layers = 2
+        self.epochs = 50
         self.batch_size = 32
         self.num_chars_to_generate = self.context_length
-        self.tokenizer = Tokenizer(filters='',)
+        self.tokenizer = Tokenizer(lower=True, filters='')
         self.model = self.load_or_train_model()
 
     def log_to_file(self, message):
@@ -46,7 +46,7 @@ class BobTheBot:
     def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87):
         start_time = time.time()
 
-        generated_text = seed_text
+        generated_text = seed_text.lower()
         result = ""
 
         for _ in range(num_chars_to_generate):
@@ -158,7 +158,7 @@ class BobTheBot:
         output_sequences = []
 
         for seq in sequences:
-            original_text = all_text_data_arr[sequences.index(seq)]
+            original_text = all_text_data_arr[sequences.index(seq)].lower()
             parts = original_text.split(delimiter)
             question, answer = parts[0], parts[1]
 
