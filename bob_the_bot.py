@@ -25,12 +25,12 @@ class BobTheBot:
 
         self.end_token = '[e]'
         self.delimiter = '[m]'
-        self.context_length = 2048
+        self.context_length = 1024
         self.embedding_dim = 64
-        self.lstm_units = 128
-        self.hidden_dim = 128
+        self.lstm_units = 8
+        self.hidden_dim = 8
         self.n_layers = 2
-        self.epochs = 100
+        self.epochs = 5
         self.batch_size = 32
         self.num_chars_to_generate = self.context_length
         self.tokenizer = Tokenizer(filters='!"#$%&()*+,-./:;<=>?@\\^_`{|}~\t\n',)
