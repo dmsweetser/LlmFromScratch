@@ -25,14 +25,15 @@ class BobTheBot:
 
         self.end_token = '[e]'
         self.delimiter = '[m]'
-        self.context_length = 512
-        self.embedding_dim = 512
-        self.lstm_units = 8
-        self.hidden_dim = 8
-        self.n_layers = 2
+        self.context_length = 256
+        self.embedding_dim = 256
+        self.lstm_units = 256
+        self.hidden_dim = 256
+        self.n_layers = 1
         self.epochs = 50
         self.batch_size = 32
         self.num_chars_to_generate = self.context_length
+        # self.tokenizer = Tokenizer(char_level=True, lower=True, filters='')
         self.tokenizer = Tokenizer(lower=True, filters='')
         self.model = self.load_or_train_model()
 
@@ -84,7 +85,6 @@ class BobTheBot:
                     break
 
                 generated_text += " " + output_word
-                self.log_to_file(f"Current Result: {result}")
 
         end_time = time.time()
         time_taken = end_time - start_time
@@ -114,7 +114,6 @@ class BobTheBot:
     So, in a nutshell, the model is like a storyteller with magical dictionaries, friends who read in both directions, spotlights, chefs, helpers, and memory-keeping friends. All of them work together to create the best and most exciting stories!
     '''
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
-
         sequence_input = Input(shape=(context_length,), dtype='int32')
         embedded_sequence = Embedding(vocab_size, embedding_dim, input_length=context_length)(sequence_input)
 
@@ -126,15 +125,16 @@ class BobTheBot:
             conv_output = Conv1D(filters=hidden_dim, kernel_size=3, activation='relu')(attention_output)
             pooled_output = MaxPooling1D(pool_size=2)(conv_output)
             normalized_output = BatchNormalization()(pooled_output)
-            gru_output = Bidirectional(GRU(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
+            lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
 
-        lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(gru_output)
+        lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(lstm_output)
         dense_output = Dense(hidden_dim, activation='relu')(lstm_attention_output)
         dropout_output = Dropout(0.2)(dense_output)
         output = Dense(vocab_size, activation='softmax')(dropout_output)
 
         model = Model(inputs=sequence_input, outputs=output)
-        model.compile(loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+        optimizer = tf.keras.optimizers.Adam(learning_rate=1.0)
+        model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
         return model
 
@@ -222,8 +222,12 @@ class BobTheBot:
     def chat_loop(self):
 
         print("Initial tests")
+        self.log_to_file(f"User: What is your name?")
         generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        self.log_to_file(f"Assistant: {generated_response}")
+        self.log_to_file(f"User: What is 2 + 2?")
         generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        self.log_to_file(f"Assistant: {generated_response}")
         print("End initial tests")
 
         while True:
