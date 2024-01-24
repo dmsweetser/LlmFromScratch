@@ -2,7 +2,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Embedding, LSTM, Attention, Bidirectional, GRU, Conv1D, MaxPooling1D, BatchNormalization, Dense, Dropout
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import datetime
@@ -25,15 +25,17 @@ class BobTheBot:
 
         self.end_token = '[e]'
         self.delimiter = '[m]'
-        self.context_length = 256
+
+        self.context_length = 512
+
         self.embedding_dim = 256
         self.lstm_units = 256
         self.hidden_dim = 256
         self.n_layers = 1
-        self.epochs = 50
-        self.batch_size = 32
+        self.epochs = 30
+        self.batch_size = 8
+        
         self.num_chars_to_generate = self.context_length
-        # self.tokenizer = Tokenizer(char_level=True, lower=True, filters='')
         self.tokenizer = Tokenizer(lower=True, filters='')
         self.model = self.load_or_train_model()
 
@@ -92,48 +94,15 @@ class BobTheBot:
 
         return result
 
-    '''
-    MODEL DESCRIPTION
-
-    Imagine your model is like a storyteller, and it's really good at understanding and creating stories. The stories are made up of words, and each word has its own special meaning. The model's job is to learn how to tell stories by understanding the patterns and relationships between these words.
-
-    Now, think of the Embedding layer as a magical dictionary that helps the storyteller understand the meaning of each word. When the storyteller reads a word, it looks up the word in this magical dictionary and gets a special code that represents the word's meaning. This code is like a secret language that the storyteller and the dictionary use to communicate.
-
-    In our story, the storyteller (model) wants to create really interesting and detailed stories. So, it has a special trick called Bidirectional LSTM. This is like having a friend who reads the story from the beginning to the end and another friend who reads it from the end to the beginning. They both share their understanding, and it helps the storyteller catch all the important details and connections in the story.
-
-    Then, there's an Attention mechanism, which is like a spotlight that the storyteller uses to focus on the most exciting parts of the story. It helps the storyteller pay extra attention to important details.
-
-    After that, there's a Convolutional layer, which is like a chef adding some spice to the story. It enhances certain aspects of the story to make it more flavorful and interesting.
-
-    The BatchNormalization is like having a helper who ensures that everything stays in order and doesn't get too messy. It helps keep the story well-balanced.
-
-    Now, the GRU (Gated Recurrent Unit) is like having another set of friends who remember bits of the story and share them with the storyteller. They work together to make sure no part of the story is forgotten.
-
-    Finally, the storyteller puts everything together and tells the story. The Dense layer is like the storyteller organizing all the information and presenting it in a way that makes sense.
-
-    So, in a nutshell, the model is like a storyteller with magical dictionaries, friends who read in both directions, spotlights, chefs, helpers, and memory-keeping friends. All of them work together to create the best and most exciting stories!
-    '''
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
-        sequence_input = Input(shape=(context_length,), dtype='int32')
-        embedded_sequence = Embedding(vocab_size, embedding_dim, input_length=context_length)(sequence_input)
-
-        lstm_output = embedded_sequence
-
-        for _ in range(n_layers):
-            lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(lstm_output)
-            attention_output = Attention()([lstm_output, lstm_output])
-            conv_output = Conv1D(filters=hidden_dim, kernel_size=3, activation='relu')(attention_output)
-            pooled_output = MaxPooling1D(pool_size=2)(conv_output)
-            normalized_output = BatchNormalization()(pooled_output)
-            lstm_output = Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2))(normalized_output)
-
-        lstm_attention_output = LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)(lstm_output)
-        dense_output = Dense(hidden_dim, activation='relu')(lstm_attention_output)
-        dropout_output = Dropout(0.2)(dense_output)
-        output = Dense(vocab_size, activation='softmax')(dropout_output)
-
-        model = Model(inputs=sequence_input, outputs=output)
-        optimizer = tf.keras.optimizers.Adam(learning_rate=1.0)
+        model = Sequential()
+        model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+        model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2)))
+        model.add(Bidirectional(LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)))
+        model.add(Dense(hidden_dim, activation='relu'))
+        model.add(Dropout(0.2))
+        model.add(Dense(vocab_size, activation='softmax'))
+        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)  # Adjust learning rate as needed
         model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
         return model
