@@ -32,7 +32,7 @@ class BobTheBot:
         self.lstm_units = 256
         self.hidden_dim = 256
         self.n_layers = 1
-        self.epochs = 1
+        self.epochs = 10
         self.batch_size = 8
         
         self.num_chars_to_generate = self.context_length
@@ -174,8 +174,8 @@ class BobTheBot:
             self.log_to_file(f"Loaded existing model: model.keras")
         else:
             text_data_arr = [
-                f"What is your name? {self.delimiter} My name is Bob. {self.end_token}",
-                f"What is 2 + 2? {self.delimiter} 2 + 2 = 4. {self.end_token}"
+                f"your name {self.delimiter} bob {self.end_token}",
+                f"2 + 2 {self.delimiter} 2 + 2 = 4 {self.end_token}"
                 ]
             input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
             model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
