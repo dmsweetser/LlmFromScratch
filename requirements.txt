@@ -5,3 +5,5 @@ pocketsphinx
 gtts
 SpeechRecognition
 pyaudio
+whisper
+silero
