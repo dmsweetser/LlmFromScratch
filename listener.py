@@ -2,6 +2,7 @@ import os
 from pocketsphinx import LiveSpeech
 from gtts import gTTS
 import speech_recognition as sr
+from bob_the_bot import *
 
 def main():
     # Initialize LiveSpeech and source
@@ -9,7 +10,7 @@ def main():
     recognizer = sr.Recognizer()
     source = sr.Microphone()
 
-    bob_the_bot = BobTheBot()
+    chat_bot = BobTheBot()
 
     def text_to_speech(text, filename):
         tts_result = gTTS(text=text, lang='en')
@@ -33,7 +34,7 @@ def main():
             question = text.lower().split("hey bob", 1)[1].strip()
 
             # Generate a response using the chatbot
-            response = bob_the_bot.generate_text(log_file_path, bob_the_bot.end_token, question.lower(), bob_the_bot.model, bob_the_bot.tokenizer, bob_the_bot.context_length, num_chars_to_generate=bob_the_bot.context_length)
+            response = chat_bot.generate_text(log_file_path, chat_bot.end_token, question.lower(), chat_bot.model, chat_bot.tokenizer, chat_bot.context_length, num_chars_to_generate=chat_bot.context_length)
 
             # Text-to-speech for the chatbot response
             text_to_speech(response, "result")
@@ -52,7 +53,7 @@ def main():
 
                 # Listening for correction
                 correction_text = listen_for_correction()
-                bob_the_bot.process_correction(question, correction_text)
+                chat_bot.process_correction(question, correction_text)
                 print("Processed correction. Back to normal listening...")
 
 if __name__ == "__main__":
