@@ -29,8 +29,8 @@ class BobTheBot:
         self.context_length = 512
 
         self.embedding_dim = 256
-        self.lstm_units = 256
-        self.hidden_dim = 256
+        self.lstm_units = 400
+        self.hidden_dim = 400
         self.n_layers = 1
         self.epochs = 30
         self.batch_size = 8
