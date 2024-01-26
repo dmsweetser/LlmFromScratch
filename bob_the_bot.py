@@ -32,7 +32,7 @@ class BobTheBot:
         self.lstm_units = 256
         self.hidden_dim = 256
         self.n_layers = 1
-        self.epochs = 50
+        self.epochs = 30
         self.batch_size = 16
         
         self.num_chars_to_generate = self.context_length
