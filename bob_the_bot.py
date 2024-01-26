@@ -26,14 +26,14 @@ class BobTheBot:
         self.end_token = '[e]'
         self.delimiter = '[m]'
 
-        self.context_length = 512
+        self.context_length = 256
 
         self.embedding_dim = 256
-        self.lstm_units = 256
-        self.hidden_dim = 256
+        self.lstm_units = 512
+        self.hidden_dim = 512
         self.n_layers = 1
-        self.epochs = 30
-        self.batch_size = 16
+        self.epochs = 200
+        self.batch_size = 8
         
         self.num_chars_to_generate = self.context_length
         self.tokenizer = Tokenizer(lower=True, filters='')
@@ -175,8 +175,8 @@ class BobTheBot:
                 self.log_to_file("Loaded existing model and tokenizer")
         else:
             text_data_arr = [
-                f"your name {self.delimiter} bob {self.end_token}",
-                f"2 + 2 {self.delimiter} 2 + 2 = 4 {self.end_token}"
+                f"What is your name? {self.delimiter} My name is Bob. {self.end_token}",
+                f"What is 2 + 2? {self.delimiter} 2 + 2 = 4. {self.end_token}"
                 ]
             input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
             model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
