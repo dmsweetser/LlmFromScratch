@@ -32,8 +32,8 @@ class BobTheBot:
         self.lstm_units = 256
         self.hidden_dim = 256
         self.n_layers = 1
-        self.epochs = 10
-        self.batch_size = 8
+        self.epochs = 50
+        self.batch_size = 16
         
         self.num_chars_to_generate = self.context_length
         self.tokenizer = Tokenizer(lower=True, filters='')
@@ -170,8 +170,9 @@ class BobTheBot:
             tokenizer_config_path = "tokenizer_config.json"
             with open(tokenizer_config_path, "r", encoding="utf-8") as json_file:
                 tokenizer_config_str = json_file.read()
-            tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
-            self.log_to_file(f"Loaded existing model: model.keras")
+                tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
+                self.tokenizer = tokenizer
+                self.log_to_file("Loaded existing model and tokenizer")
         else:
             text_data_arr = [
                 f"your name {self.delimiter} bob {self.end_token}",
