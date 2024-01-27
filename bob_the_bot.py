@@ -38,7 +38,7 @@ class BobTheBot:
         self.recurrent_dropout = recurrent_dropout
         self.learning_rate = learning_rate
 
-        self.log_to_file(f"Current config:\nContext Length: {context_length}\nEmbedding Dim: {embedding_dim}\nLSTM Units: {lstm_units}\nHidden Dim: {hidden_dim}\n Layers: {n_layers}\nEpochs: {epochs}\nBatch Size: {batch_size}\n")
+        self.log_to_file(f"Current config:\nContext Length: {context_length}\n Layers: {n_layers}\nEmbedding Dim: {embedding_dim}\nLSTM Units: {lstm_units}\nHidden Dim: {hidden_dim}\nEpochs: {epochs}\nBatch Size: {batch_size}\nLearning Rate: {learning_rate}\nDropout: {dropout}\nRecurrent Dropout: {recurrent_dropout}")
        
         self.num_chars_to_generate = self.context_length
         self.tokenizer = Tokenizer(lower=True, filters='')
