@@ -10,7 +10,7 @@ import time
 import json
 
 class BobTheBot:
-    def __init__(self):
+    def __init__(self, context_length, embedding_dim, lstm_units, hidden_dim, n_layers, epochs, batch_size):
         self.training_data_file = "training_data.json"
         self.logs_folder = "logs"
 
@@ -26,15 +26,16 @@ class BobTheBot:
         self.end_token = '[e]'
         self.delimiter = '[m]'
 
-        self.context_length = 256
+        self.context_length = context_length # 256
+        self.embedding_dim = embedding_dim # 32
+        self.lstm_units = lstm_units # 512
+        self.hidden_dim = hidden_dim # 512
+        self.n_layers = n_layers # 1
+        self.epochs = epochs # 10
+        self.batch_size = batch_size # 16
 
-        self.embedding_dim = 256
-        self.lstm_units = 512
-        self.hidden_dim = 512
-        self.n_layers = 1
-        self.epochs = 200
-        self.batch_size = 8
-        
+        self.log_to_file(f"Current config:\nContext Length: {context_length}\nEmbedding Dim: {embedding_dim}\nLSTM Units: {lstm_units}\nHidden Dim: {hidden_dim}\n Layers: {n_layers}\nEpochs: {epochs}\nBatch Size: {batch_size}\n")
+       
         self.num_chars_to_generate = self.context_length
         self.tokenizer = Tokenizer(lower=True, filters='')
         self.model = self.load_or_train_model()
@@ -254,5 +255,5 @@ class BobTheBot:
         self.chat_loop()
 
 if __name__ == "__main__":
-    bob_the_bot = BobTheBot()
+    bob_the_bot = BobTheBot(256, 32, 512, 512, 1, 10, 16)
     bob_the_bot.main()
