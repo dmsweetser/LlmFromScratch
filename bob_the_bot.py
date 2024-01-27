@@ -10,7 +10,7 @@ import time
 import json
 
 class BobTheBot:
-    def __init__(self, context_length, embedding_dim, lstm_units, hidden_dim, n_layers, epochs, batch_size, bypass_chat_loop):
+    def __init__(self, learning_rate, dropout, recurrent_dropout, context_length, embedding_dim, lstm_units, hidden_dim, n_layers, epochs, batch_size, bypass_chat_loop):
         self.training_data_file = "training_data.json"
         self.logs_folder = "logs"
 
@@ -34,6 +34,9 @@ class BobTheBot:
         self.n_layers = n_layers # 1
         self.epochs = epochs # 10
         self.batch_size = batch_size # 16
+        self.dropout = dropout
+        self.recurrent_dropout = recurrent_dropout
+        self.learning_rate = learning_rate
 
         self.log_to_file(f"Current config:\nContext Length: {context_length}\nEmbedding Dim: {embedding_dim}\nLSTM Units: {lstm_units}\nHidden Dim: {hidden_dim}\n Layers: {n_layers}\nEpochs: {epochs}\nBatch Size: {batch_size}\n")
        
@@ -99,12 +102,12 @@ class BobTheBot:
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
         model = Sequential()
         model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-        model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=0.2, recurrent_dropout=0.2)))
-        model.add(Bidirectional(LSTM(lstm_units, dropout=0.2, recurrent_dropout=0.2)))
+        model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+        model.add(Bidirectional(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
         model.add(Dense(hidden_dim, activation='relu'))
-        model.add(Dropout(0.2))
+        model.add(Dropout(self.dropout))
         model.add(Dense(vocab_size, activation='softmax'))
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)  # Adjust learning rate as needed
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)  # Adjust learning rate as needed
         model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
         return model
