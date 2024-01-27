@@ -10,7 +10,7 @@ import time
 import json
 
 class BobTheBot:
-    def __init__(self, context_length, embedding_dim, lstm_units, hidden_dim, n_layers, epochs, batch_size):
+    def __init__(self, context_length, embedding_dim, lstm_units, hidden_dim, n_layers, epochs, batch_size, bypass_chat_loop):
         self.training_data_file = "training_data.json"
         self.logs_folder = "logs"
 
@@ -26,6 +26,7 @@ class BobTheBot:
         self.end_token = '[e]'
         self.delimiter = '[m]'
 
+        self.bypass_chat_loop = bypass_chat_loop
         self.context_length = context_length # 256
         self.embedding_dim = embedding_dim # 32
         self.lstm_units = lstm_units # 512
@@ -252,7 +253,8 @@ class BobTheBot:
                 self.log_to_file("Saved the trained model as model.keras")
 
     def main(self):
-        self.chat_loop()
+        if self.bypass_chat_loop is False:
+            self.chat_loop()
 
 if __name__ == "__main__":
     bob_the_bot = BobTheBot(256, 32, 512, 512, 1, 10, 16)
