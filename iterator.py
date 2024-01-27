@@ -1,6 +1,9 @@
 
 
-for context_length in [64, 128, 256, 512, 1024]:
+
+from bob_the_bot import BobTheBot
+
+for context_length in [128, 256, 512, 1024]:
     for embedding_dim in [2, 4, 8, 16, 32, 64, 128]:
         for lstm_units in [2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024]:
             for hidden_dim in [2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024]:
