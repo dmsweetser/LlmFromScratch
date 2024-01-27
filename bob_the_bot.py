@@ -253,6 +253,16 @@ class BobTheBot:
                 self.log_to_file("Saved the trained model as model.keras")
 
     def main(self):
+
+        print("Initial tests")
+        self.log_to_file(f"User: What is your name?")
+        generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        self.log_to_file(f"Assistant: {generated_response}")
+        self.log_to_file(f"User: What is 2 + 2?")
+        generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        self.log_to_file(f"Assistant: {generated_response}")
+        print("End initial tests")
+
         if self.bypass_chat_loop is False:
             self.chat_loop()
 

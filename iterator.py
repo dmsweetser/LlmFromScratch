@@ -2,6 +2,7 @@
 
 
 from bob_the_bot import BobTheBot
+import os
 
 for context_length in [128, 256, 512, 1024]:
     for embedding_dim in [2, 4, 8, 16, 32, 64, 128]:
@@ -14,8 +15,18 @@ for context_length in [128, 256, 512, 1024]:
                                 f"Embedding Dim: {embedding_dim}, LSTM Units: {lstm_units},\n"
                                 f"Hidden Dim: {hidden_dim}, N_Layers: {n_layers},\n"
                                 f"Epochs: {epochs}, Batch Size: {batch_size}\n")
-                            bob_the_bot = BobTheBot(context_length=context_length, embedding_dim=embedding_dim, lstm_units=lstm_units, hidden_dim=hidden_dim, n_layers=n_layers, epochs=epochs, batch_size=batch_size, bypass_chat_loop=True)
+
+                            bob_the_bot = BobTheBot(
+                                context_length=context_length, 
+                                embedding_dim=embedding_dim, 
+                                lstm_units=lstm_units, 
+                                hidden_dim=hidden_dim, 
+                                n_layers=n_layers, 
+                                epochs=epochs, 
+                                batch_size=batch_size, 
+                                bypass_chat_loop=True)
+
                             bob_the_bot.main()
-                            os.system("rm model.keras")
-                            os.system("rm tokenizer_config.json")
-                            os.system("rm training_data.json")
+                            os.system("del model.keras")
+                            os.system("del tokenizer_config.json")
+                            os.system("del training_data.json")
