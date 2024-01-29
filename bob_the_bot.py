@@ -123,6 +123,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 3:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -130,6 +132,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 4:
             model = Sequential()
             model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
@@ -138,6 +142,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 5:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -145,6 +151,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 6:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -153,6 +161,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 7:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -161,6 +171,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 8:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -168,6 +180,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 9:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -177,6 +191,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 10:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -185,6 +201,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 11:
             model = Sequential()
             model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
@@ -194,6 +212,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 12:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -202,6 +222,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))        
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 13:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -211,6 +233,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 14:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -220,6 +244,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 15:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -228,8 +254,8 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-
-        model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         return model
 
     def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):

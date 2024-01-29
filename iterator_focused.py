@@ -20,7 +20,7 @@ def create_config():
   }
   return config
 
-for context_length in [32]:
+for context_length in [64]:
   for n_layers in [1, 2, 3, 4, 5]:
       for embedding_dim in [16, 64, 128]:
           for lstm_units in [16, 64, 128, 256, 512]:
