@@ -29,7 +29,7 @@ for context_length in [32]:
                         for batch_size in [8, 16, 32]:
                             for learning_rate in [0.1, 0.01, 0.001, 0.0001]:
                                 for dropout in [0.1, 0.2, 0.4, 0.9]:
-                                    for model_variation in [1,2,3,4,5,6,7,8]:
+                                    for model_variation in [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]:
                                         config = create_config()
                                         config["context_length"] = context_length
                                         config["n_layers"] = n_layers

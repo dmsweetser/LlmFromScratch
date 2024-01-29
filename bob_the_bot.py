@@ -114,92 +114,122 @@ class BobTheBot:
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)  # Adjust learning rate as needed
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
             model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 2:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Bidirectional(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 3:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(GRU(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+            model.add(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 4:
             model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Bidirectional(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+            model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
+            model.add(MaxPooling1D(pool_size=2))
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 5:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-
-            lstm_layer = LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)
-
-            for _ in range(n_layers):
-                model.add(lstm_layer)
-
+            model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 6:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for i in range(n_layers):
-                if i == 0:
-                    model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-                    model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout) if i == 0 else LSTM(lstm_units, dropout=dropout, recurrent_dropout=recurrent_dropout)))
-                else:
-                    model.add(Bidirectional(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+            model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 7:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(GRU(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+            model.add(AttentionLayer())  # Custom attention layer
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(Dense(hidden_dim, activation='relu'))
+            model.add(Dropout(self.dropout))
+            model.add(Dense(vocab_size, activation='softmax'))
+        elif self.model_variation == 8:
+            model = Sequential()
+            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
             model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 8:
+        elif self.model_variation == 9:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for i in range(n_layers):
-                if i == 0:
-                    model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-                    model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout) if i == 0 else LSTM(lstm_units, dropout=dropout, recurrent_dropout=recurrent_dropout)))
-                else:
-                    model.add(Bidirectional(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+            for _ in range(self.n_layers - 1):
+                model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+        elif self.model_variation == 10:
+            model = Sequential()
+            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+            for _ in range(self.n_layers - 1):
+                model.add(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(Dense(hidden_dim, activation='relu'))
+            model.add(Dropout(self.dropout))
+            model.add(Dense(vocab_size, activation='softmax'))
+        elif self.model_variation == 11:
+            model = Sequential()
+            model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
+            model.add(MaxPooling1D(pool_size=2))
+            for _ in range(self.n_layers - 1):
+                model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(Dense(hidden_dim, activation='relu'))
+            model.add(Dropout(self.dropout))
+            model.add(Dense(vocab_size, activation='softmax'))
+        elif self.model_variation == 12:
+            model = Sequential()
+            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+            for _ in range(self.n_layers - 1):
+                model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(Dense(hidden_dim, activation='relu'))
+            model.add(Dropout(self.dropout))
+            model.add(Dense(vocab_size, activation='softmax'))        
+        elif self.model_variation == 13:
+            model = Sequential()
+            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+            for _ in range(self.n_layers - 1):
+                model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(Dense(hidden_dim, activation='relu'))
+            model.add(Dropout(self.dropout))
+            model.add(Dense(vocab_size, activation='softmax'))
+        elif self.model_variation == 14:
+            model = Sequential()
+            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+            model.add(AttentionLayer())  # Custom attention layer
+            for _ in range(self.n_layers - 1):
+                model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(Dense(hidden_dim, activation='relu'))
+            model.add(Dropout(self.dropout))
+            model.add(Dense(vocab_size, activation='softmax'))
+        elif self.model_variation == 15:
+            model = Sequential()
+            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+            for _ in range(self.n_layers - 1):
+                model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+            model.add(Dense(hidden_dim, activation='relu'))
+            model.add(Dropout(self.dropout))
+            model.add(Dense(vocab_size, activation='softmax'))
 
+        model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         return model
 
     def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):
@@ -360,5 +390,6 @@ class BobTheBot:
             self.chat_loop()
 
 if __name__ == "__main__":
+
     bob_the_bot = BobTheBot(256, 32, 512, 512, 1, 10, 16)
     bob_the_bot.main()
