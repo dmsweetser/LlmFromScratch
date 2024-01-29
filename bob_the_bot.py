@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Input, Embedding, LSTM, Attention, Bidirectional, GRU, Conv1D, MaxPooling1D, BatchNormalization, Dense, Dropout
+from tensorflow.keras.layers import Input, Embedding, LSTM, Attention, Bidirectional, GRU, Conv1D, MaxPooling1D, BatchNormalization, Dense, Dropout, SimpleRNN
 from tensorflow.keras.models import Model, Sequential
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -134,16 +134,6 @@ class BobTheBot:
             model.add(Dense(vocab_size, activation='softmax'))
             optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
             model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 4:
-            model = Sequential()
-            model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
-            model.add(MaxPooling1D(pool_size=2))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 5:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
@@ -166,8 +156,12 @@ class BobTheBot:
         elif self.model_variation == 7:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(AttentionLayer())  # Custom attention layer
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+            model.add(Attention())  # Custom attention layer
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True))
+            
+            # Reshape the output to be a 2D tensor
+            model.add(Flatten())  # You may adjust this layer based on the desired output
+            
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
@@ -218,10 +212,14 @@ class BobTheBot:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
             for _ in range(self.n_layers - 1):
-                model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+                model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True))
+            model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))        
+            
+            # Ensure the number of units in the Dense layer matches the number of classes (vocab_size)
+            model.add(Dense(vocab_size, activation='softmax'))
+            
             optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
             model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         elif self.model_variation == 13:
@@ -238,9 +236,10 @@ class BobTheBot:
         elif self.model_variation == 14:
             model = Sequential()
             model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(AttentionLayer())  # Custom attention layer
+            model.add(Attention())  # Custom attention layer
             for _ in range(self.n_layers - 1):
-                model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+                model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True))
+            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
             model.add(Dense(hidden_dim, activation='relu'))
             model.add(Dropout(self.dropout))
             model.add(Dense(vocab_size, activation='softmax'))
