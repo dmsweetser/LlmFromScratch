@@ -89,7 +89,7 @@ class BobTheBot:
 
             # Addresses a casting issue later on
             predicted_probs = predicted_probs.astype(np.float64)
-            
+
             # Ensure predicted_probs sum to 1
             predicted_probs /= np.sum(predicted_probs)
 
@@ -261,12 +261,12 @@ class BobTheBot:
 
     def main(self):
 
-        self.log_to_file(f"User: What is your name?")
-        generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        self.log_to_file(f"Assistant: {generated_response}")
-        self.log_to_file(f"User: What is 2 + 2?")
-        generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        self.log_to_file(f"Assistant: {generated_response}")
+        # self.log_to_file(f"User: What is your name?")
+        # generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        # self.log_to_file(f"Assistant: {generated_response}")
+        # self.log_to_file(f"User: What is 2 + 2?")
+        # generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
+        # self.log_to_file(f"Assistant: {generated_response}")
 
         if self.bypass_chat_loop is False:
             self.chat_loop()
@@ -274,11 +274,11 @@ class BobTheBot:
 if __name__ == "__main__":
 
     config = {
-      "context_length": 64,
+      "context_length": 128,
       "embedding_dim": 16,
       "lstm_units": 128,
       "hidden_dim": 16,
-      "epochs": 60,
+      "epochs": 100,
       "batch_size": 64,
       "learning_rate": 0.01,
       "dropout": 0.2,
