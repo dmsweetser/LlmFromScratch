@@ -10,7 +10,7 @@ import time
 import json
 
 class BobTheBot:
-    def __init__(self, learning_rate, dropout, recurrent_dropout, context_length, embedding_dim, lstm_units, hidden_dim, n_layers, epochs, batch_size, bypass_chat_loop, model_variation):
+    def __init__(self, config, bypass_chat_loop):
 
         self.training_data_file = "training_data.json"
         self.logs_folder = "logs"
@@ -28,19 +28,17 @@ class BobTheBot:
         self.delimiter = '[m]'
 
         self.bypass_chat_loop = bypass_chat_loop
-        self.context_length = context_length # 256
-        self.embedding_dim = embedding_dim # 32
-        self.lstm_units = lstm_units # 512
-        self.hidden_dim = hidden_dim # 512
-        self.n_layers = n_layers # 1
-        self.epochs = epochs # 10
-        self.batch_size = batch_size # 16
-        self.dropout = dropout
-        self.recurrent_dropout = recurrent_dropout
-        self.learning_rate = learning_rate
-        self.model_variation = model_variation
+        self.context_length = config["context_length"]
+        self.embedding_dim = config["embedding_dim"]
+        self.lstm_units = config["lstm_units"]
+        self.hidden_dim = config["hidden_dim"]
+        self.epochs = config["epochs"]
+        self.batch_size = config["batch_size"]
+        self.dropout = config["dropout"]
+        self.recurrent_dropout = config["recurrent_dropout"]
+        self.learning_rate = config["learning_rate"]
 
-        self.log_to_file(f"Current config:\nContext Length: {context_length}\nLayers: {n_layers}\nEmbedding Dim: {embedding_dim}\nLSTM Units: {lstm_units}\nHidden Dim: {hidden_dim}\nEpochs: {epochs}\nBatch Size: {batch_size}\nLearning Rate: {learning_rate}\nDropout: {dropout}\nRecurrent Dropout: {recurrent_dropout}\nModel Variation: {model_variation}")
+        self.log_to_file(f"Current config:\n\n{config}")
 
         try:
             self.num_chars_to_generate = self.context_length
@@ -56,11 +54,16 @@ class BobTheBot:
         with open(self.log_file_name, "a") as log_file:
             log_file.write(log_entry)
 
-    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87):
-        start_time = time.time()
+    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87, repetition_penalty=1.01):
+
+        self.last_generated_words = {}
+        result = ""
 
         generated_text = seed_text.lower()
-        result = ""
+
+        split_generated_text = generated_text.split()
+        for word in split_generated_text:
+            self.last_generated_words[word] = True        
 
         for _ in range(num_chars_to_generate):
             token_list = tokenizer.texts_to_sequences([generated_text])[0]
@@ -72,23 +75,29 @@ class BobTheBot:
             exp_preds = np.exp(predicted_probs)
             predicted_probs = exp_preds / np.sum(exp_preds)
 
-            # Calculate predicted token within the valid range of word_index
-            valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1)]
-            print(f"Valid Predicted Tokens: {valid_predicted_tokens}")
-            print(f"Predicted Probabilities: {predicted_probs}")
+            valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1) if index not in self.last_generated_words]
 
+            # Apply repetition penalty
+            if len(self.last_generated_words) > 0:
+                last_generated_word = list(self.last_generated_words.keys())[-1]
+                last_generated_word_index = tokenizer.word_index[last_generated_word]
+                last_generated_word_probability = predicted_probs[last_generated_word_index]
+
+                if last_generated_word_probability > 0:
+                    repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
+                    predicted_probs *= repetition_penalty
+
+            # Addresses a casting issue later on
+            predicted_probs = predicted_probs.astype(np.float64)
+            
             # Ensure predicted_probs sum to 1
             predicted_probs /= np.sum(predicted_probs)
 
-            # Calculate predicted token without using np.random.choice
-            predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1))
-
-            print(f"Predicted Token: {predicted_token}")
+            # Calculate predicted token within the valid range of word_index
+            predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1)[0])
 
             # Find the corresponding word for the predicted token
             output_word = tokenizer.index_word.get(predicted_token, "")
-
-            print(f"Output Word: {output_word}")
 
             if output_word != "":
                 result += output_word + " "
@@ -97,164 +106,23 @@ class BobTheBot:
                     break
 
                 generated_text += " " + output_word
-
-        end_time = time.time()
-        time_taken = end_time - start_time
-        self.log_to_file(f"Time taken for text generation: {time_taken} seconds")
+                self.last_generated_words[output_word] = True
+            else:
+                self.log_to_file(f"Warning: Invalid token index: {predicted_token}")
+                self.log_to_file(f"Generated text: {generated_text}")
+                break
 
         return result
 
-    def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim, n_layers):
-
-        if self.model_variation == 1:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Bidirectional(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 2:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 3:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 5:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 6:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 7:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Attention())  # Custom attention layer
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True))
-            
-            # Reshape the output to be a 2D tensor
-            model.add(Flatten())  # You may adjust this layer based on the desired output
-            
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 8:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 9:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for _ in range(self.n_layers - 1):
-                model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 10:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for _ in range(self.n_layers - 1):
-                model.add(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 11:
-            model = Sequential()
-            model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
-            model.add(MaxPooling1D(pool_size=2))
-            for _ in range(self.n_layers - 1):
-                model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 12:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for _ in range(self.n_layers - 1):
-                model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True))
-            model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            
-            # Ensure the number of units in the Dense layer matches the number of classes (vocab_size)
-            model.add(Dense(vocab_size, activation='softmax'))
-            
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 13:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for _ in range(self.n_layers - 1):
-                model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 14:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Attention())  # Custom attention layer
-            for _ in range(self.n_layers - 1):
-                model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
-        elif self.model_variation == 15:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for _ in range(self.n_layers - 1):
-                model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+    def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
+        model = Sequential()
+        model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+        model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
+        model.add(Dense(hidden_dim, activation='relu'))
+        model.add(Dropout(self.dropout))
+        model.add(Dense(vocab_size, activation='softmax'))
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
         return model
 
     def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):
@@ -329,7 +197,7 @@ class BobTheBot:
                 f"What is 2 + 2? {self.delimiter} 2 + 2 = 4. {self.end_token}"
                 ]
             input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
-            model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
+            model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
             self.train_model(model, input_sequences, output_sequences, self.epochs, self.batch_size)
             self.log_to_file("Trained a new model")
             model.save("model.keras")
@@ -340,15 +208,6 @@ class BobTheBot:
         return model
 
     def chat_loop(self):
-
-        print("Initial tests")
-        self.log_to_file(f"User: What is your name?")
-        generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        self.log_to_file(f"Assistant: {generated_response}")
-        self.log_to_file(f"User: What is 2 + 2?")
-        generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        self.log_to_file(f"Assistant: {generated_response}")
-        print("End initial tests")
 
         while True:
             # Initialize empty lists for input and output sequences
@@ -376,7 +235,7 @@ class BobTheBot:
                     # Update the training data with the new question and answer
                     text_data_arr = [f"{user_question} {self.delimiter} {correct_answer} {self.end_token}"]
                     input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
-                    self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
+                    self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
                     self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
                     self.log_to_file("Trained existing model with new data")
 
@@ -390,7 +249,7 @@ class BobTheBot:
                 self.log_to_file(f"Auto-training with new input: {user_question}")
                 text_data_arr = [f"{user_question} {self.end_token}"]
                 input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
-                self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim, self.n_layers)
+                self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
                 self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
                 self.log_to_file("Retrained existing model")
 
@@ -402,19 +261,29 @@ class BobTheBot:
 
     def main(self):
 
-        print("Initial tests")
         self.log_to_file(f"User: What is your name?")
         generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
         self.log_to_file(f"Assistant: {generated_response}")
         self.log_to_file(f"User: What is 2 + 2?")
         generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
         self.log_to_file(f"Assistant: {generated_response}")
-        print("End initial tests")
 
         if self.bypass_chat_loop is False:
             self.chat_loop()
 
 if __name__ == "__main__":
 
-    bob_the_bot = BobTheBot(256, 32, 512, 512, 1, 10, 16)
+    config = {
+      "context_length": 64,
+      "embedding_dim": 16,
+      "lstm_units": 128,
+      "hidden_dim": 16,
+      "epochs": 60,
+      "batch_size": 64,
+      "learning_rate": 0.01,
+      "dropout": 0.2,
+      "recurrent_dropout": 0.2
+    }
+
+    bob_the_bot = BobTheBot(config, False)
     bob_the_bot.main()
