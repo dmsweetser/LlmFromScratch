@@ -310,7 +310,7 @@ if __name__ == "__main__":
       "embedding_dim": 16,
       "lstm_units": 128,
       "hidden_dim": 16,
-      "epochs": 100,
+      "epochs": 40,
       "batch_size": 64,
       "learning_rate": 0.01,
       "dropout": 0.2,
