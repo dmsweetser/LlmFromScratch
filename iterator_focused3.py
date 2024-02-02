@@ -21,15 +21,15 @@ def create_config():
   return config
 
 for context_length in [64]:
-  for n_layers in [1, 2, 3, 4, 5]:
-      for embedding_dim in [16, 32, 64, 96, 128]:
-          for lstm_units in [16, 32, 64, 96, 128, 192, 256, 512]:
-                for hidden_dim in [16, 32, 64, 96, 128, 192, 256, 512]:
-                    for epochs in [1, 10, 20, 30, 40, 50]:
-                        for batch_size in [8, 16, 32, 64]:
+    for n_layers in [1, 2, 3, 4, 5]:
+        for lstm_units in [128, 192, 256, 512]:
+            for hidden_dim in [16, 32, 64, 96, 128, 192, 256, 512]:
+                for embedding_dim in [16, 32, 64, 96, 128]:
+                    for epochs in [40]:
+                        for batch_size in [64]:
                             for learning_rate in [0.01]:
                                 for dropout in [0.2]:
-                                    for model_variation in [2, 13]:
+                                    for model_variation in [2]:
                                         config = create_config()
                                         config["context_length"] = context_length
                                         config["n_layers"] = n_layers
