@@ -54,65 +54,99 @@ class BobTheBot:
         with open(self.log_file_name, "a") as log_file:
             log_file.write(log_entry)
 
-    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.87, repetition_penalty=1.01):
-
+    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0, repetition_penalty=0.87):
+        self.log_to_file(f"Predicting using a temperature of {temperature} and a repetition_penalty of {repetition_penalty}")
+        self.log_to_file(f"User: {seed_text}")
+        # Initialize a dictionary to keep track of the last generated words
         self.last_generated_words = {}
+        # Initialize the result string
         result = ""
 
+        # Convert the seed text to lowercase
         generated_text = seed_text.lower()
 
+        # Split the generated text into a list of words
         split_generated_text = generated_text.split()
+        
+        # Update the last_generated_words dictionary with the words in the split_generated_text
         for word in split_generated_text:
             self.last_generated_words[word] = True        
 
+        # Loop for generating the specified number of characters
         for _ in range(num_chars_to_generate):
+            # Convert the generated text to token sequences
             token_list = tokenizer.texts_to_sequences([generated_text])[0]
+            # Pad the token sequences to the specified sequence length
             token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
 
+            # Get the predicted probabilities for the next token from the model
             predicted_probs = model.predict(token_list, verbose=0)[0]
 
+            # Adjust the predicted probabilities using temperature for diversity
             predicted_probs = np.log(predicted_probs) / temperature
             exp_preds = np.exp(predicted_probs)
             predicted_probs = exp_preds / np.sum(exp_preds)
 
-            valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1) if index not in self.last_generated_words]
-
-            # Apply repetition penalty
-            if len(self.last_generated_words) > 0:
-                last_generated_word = list(self.last_generated_words.keys())[-1]
-                last_generated_word_index = tokenizer.word_index[last_generated_word]
-                last_generated_word_probability = predicted_probs[last_generated_word_index]
-
-                if last_generated_word_probability > 0:
-                    repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
-                    predicted_probs *= repetition_penalty
-
             # Addresses a casting issue later on
             predicted_probs = predicted_probs.astype(np.float64)
+
+            # Get the valid predicted tokens (not already generated)
+            valid_predicted_tokens = [index for index in range(1, len(tokenizer.word_index) + 1) if index not in self.last_generated_words]
+
+            # Apply repetition penalty based on the last generated word's probability
+            # Check if there are any previously generated words
+            if len(self.last_generated_words) > 0:
+                # Get the last generated word from the dictionary
+                last_generated_word = list(self.last_generated_words.keys())[-1]
+                
+                # Get the index of the last generated word in the tokenizer's word_index
+                last_generated_word_index = tokenizer.word_index[last_generated_word]
+                
+                # Get the probability of the last generated word from the predicted probabilities
+                last_generated_word_probability = predicted_probs[last_generated_word_index]
+
+                # Check if the probability of the last generated word is positive
+                if last_generated_word_probability > 0:
+                    
+                    # Apply repetition penalty based on the probability of the last generated word
+                    repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
+                    
+                    # Multiply the predicted probabilities by the repetition penalty
+                    predicted_probs *= repetition_penalty
 
             # Ensure predicted_probs sum to 1
             predicted_probs /= np.sum(predicted_probs)
 
-            # Calculate predicted token within the valid range of word_index
-            predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1)[0])
+            # Sample the predicted token within the valid range of word_index
+            try:
+                predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1)[0])
+            except Exception as e:
+                self.log_to_file(f"Exception encountered when generating next token: {e}")
+                continue
 
             # Find the corresponding word for the predicted token
             output_word = tokenizer.index_word.get(predicted_token, "")
 
+            # Append the output word to the result string
             if output_word != "":
                 result += output_word + " "
+                # Check if the generated word is the end token, and if so, end generation
                 if output_word == end_token:
                     self.log_to_file(f"Detected end token '{end_token}'. Ending generation.")
                     break
 
+                # Update the generated text and last_generated_words dictionary
                 generated_text += " " + output_word
                 self.last_generated_words[output_word] = True
             else:
+                # Log a warning for an invalid token index
                 self.log_to_file(f"Warning: Invalid token index: {predicted_token}")
                 self.log_to_file(f"Generated text: {generated_text}")
                 break
 
+        self.log_to_file(f"Assistant: {result}")
         return result
+
 
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
         model = Sequential()
@@ -215,12 +249,10 @@ class BobTheBot:
             output_sequences = []
 
             user_question = input("You: ")
-            self.log_to_file(f"User: {user_question}")
 
             if self.delimiter not in user_question:
                 # Generate a response using the model
                 generated_response = self.generate_text(self.end_token, user_question, self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-                self.log_to_file(f"Assistant: {generated_response}")
 
                 # Ask if the answer is good or bad
                 print(f"Assistant: {generated_response}")
