@@ -31,8 +31,8 @@ end_token = chat_bot.end_token
 questions = ["What is your name?", "What is 2 + 2?"]
 
 # Iterate through all possible options for temperature and repetition_penalty
-for temperature in temperature_values:
-    for repetition_penalty in repetition_penalty_values:
+for temperature in np.arange(0.0, 1.01, 0.01):
+    for repetition_penalty in np.arange(0.0, 1.01, 0.01):
         print(f"Evaluating with Temperature={temperature}, Repetition Penalty={repetition_penalty}")
         evaluate_model(chat_bot, tokenizer, chat_bot.context_length, end_token, questions, temperature, repetition_penalty)
         print("------------------------------")

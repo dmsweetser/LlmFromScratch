@@ -54,7 +54,7 @@ class BobTheBot:
         with open(self.log_file_name, "a") as log_file:
             log_file.write(log_entry)
 
-    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=1.0, repetition_penalty=0.87):
+    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.8, repetition_penalty=0.46):
         self.log_to_file(f"Predicting using a temperature of {temperature} and a repetition_penalty of {repetition_penalty}")
         self.log_to_file(f"User: {seed_text}")
         # Initialize a dictionary to keep track of the last generated words
