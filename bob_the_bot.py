@@ -230,7 +230,25 @@ class BobTheBot:
                 f"What is your name? {self.delimiter} My name is Bob. {self.end_token}",
                 f"What is 2 + 2? {self.delimiter} 2 + 2 = 4. {self.end_token}"
                 ]
-            text_data_arr.extend(ingest_training_text("ingest"))
+            for filename in os.listdir("ingest"):
+                try:
+                    with open(os.path.join("ingest", filename), encoding="utf-8") as file:
+                        text = file.read()
+                        words = text.strip().split()
+                        output = []
+                        current_index = 0
+                        while current_index < len(words):
+                            start_index = max(0, current_index - 5)
+                            end_index = min(len(words), current_index + 6)
+                            slice = words[start_index:end_index]
+                            if len(slice) < 11:
+                                slice += [""] * (11 - len(slice))
+                            output.append(" ".join(slice[:5]) + " " + "[m]" + " " + " ".join(slice[5:]))
+                            current_index += 1
+                        text_data_arr.extend(output)
+                except Exception as e:
+                    print(f"Error processing file '{filename}': {e}")
+                    continue
             input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
             model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
             self.train_model(model, input_sequences, output_sequences, self.epochs, self.batch_size)
@@ -241,29 +259,6 @@ class BobTheBot:
                 json_file.write(tokenizer_config)
             self.log_to_file("Saved the trained model as model.keras")
         return model
-
-    def ingest_training_text(directory):
-        results = []
-        for filename in os.listdir(directory):
-            if filename.endswith(".txt"):
-                try:
-                    with open(os.path.join(directory, filename), encoding="utf-8") as file:
-                        text = file.read()
-                        words = text.strip().split()
-                        subsections = []
-                        start = 0
-                        while start < len(words):
-                            end = min(start + 10, len(words))
-                            subsection = " ".join(words[start:end]) + " [m] "
-                            subsections.append(subsection)
-                            start += 10
-                            if start >= len(words):
-                                break
-                        results.append(subsections)
-                except Exception as e:
-                    print(f"Error processing file '{filename}': {e}")
-                    continue
-        return results
 
     def chat_loop(self):
 
