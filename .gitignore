@@ -7,3 +7,5 @@ tokenizer_config.*
 training_data.*
 chat_log*
 last_executed_index.json
+ingest/*
+!ingest/placeholder.txt
