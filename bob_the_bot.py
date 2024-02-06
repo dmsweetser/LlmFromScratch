@@ -236,15 +236,11 @@ class BobTheBot:
                         text = file.read()
                         words = text.strip().split()
                         output = []
-                        current_index = 0
-                        while current_index < len(words):
-                            start_index = max(0, current_index - 5)
-                            end_index = min(len(words), current_index + 6)
-                            slice = words[start_index:end_index]
+                        for current_index in range(len(words) - 10):  # Adjusted loop range
+                            slice = words[current_index:current_index + 11]
                             if len(slice) < 11:
                                 slice += [""] * (11 - len(slice))
-                            output.append(" ".join(slice[:5]) + " " + "[m]" + " " + " ".join(slice[5:]))
-                            current_index += 1
+                            output.append(" ".join(slice[:5]) + " [m] " + " ".join(slice[5:6]))  # Adjusted slice for one word only
                         text_data_arr.extend(output)
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
