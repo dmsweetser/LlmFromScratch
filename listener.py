@@ -33,7 +33,7 @@ def main():
         tts.save(filename + ".mp3")
         os.system("ffplay -autoexit " + filename + ".mp3")
 
-    def record_audio(filename, duration=5):
+    def record_audio(filename, duration=10):
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
         CHANNELS = 1
@@ -82,7 +82,7 @@ def main():
                 print(f"You said: {response}")
                 question = response.strip()
 
-                if "stop listening" in question:
+                if "stop listening" in question.lower():
                     input("Press any key to keep listening...")
                     continue
                 elif question == "":
