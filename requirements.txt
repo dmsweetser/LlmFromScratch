@@ -6,4 +6,3 @@ gtts
 SpeechRecognition
 pyaudio
 openai-whisper
-silero

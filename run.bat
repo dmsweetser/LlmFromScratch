@@ -28,7 +28,7 @@ echo Virtual environment activated successfully.
 echo Running your script
 
 REM Run your Python script within the virtual environment
-python bob_the_bot.py
+python listener.py
 
 REM Check the exit code of the script
 if %errorlevel% neq 0 (
