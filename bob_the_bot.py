@@ -282,28 +282,25 @@ class BobTheBot:
                         json_file.write(tokenizer_config)
                     self.log_to_file("Saved the trained model as model.keras")
             else:
-                # Update the training data with the new question and answer
-                self.log_to_file(f"Auto-training with new input: {user_question}")
-                text_data_arr = [f"{user_question} {self.end_token}"]
-                input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
-                self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
-                self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
-                self.log_to_file("Retrained existing model")
+                process_correction(user_question)
 
-                self.model.save("model.keras")
-                tokenizer_config = self.tokenizer.to_json()
-                with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
-                    json_file.write(tokenizer_config)
-                self.log_to_file("Saved the trained model as model.keras")
+
+    def process_correction(self, user_question):
+        # Update the training data with the new question and answer
+        self.log_to_file(f"Auto-training with new input: {user_question}")
+        text_data_arr = [f"{user_question} {self.end_token}"]
+        input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
+        self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
+        self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
+        self.log_to_file("Retrained existing model")
+
+        self.model.save("model.keras")
+        tokenizer_config = self.tokenizer.to_json()
+        with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+            json_file.write(tokenizer_config)
+        self.log_to_file("Saved the trained model as model.keras")
 
     def main(self):
-
-        # self.log_to_file(f"User: What is your name?")
-        # generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        # self.log_to_file(f"Assistant: {generated_response}")
-        # self.log_to_file(f"User: What is 2 + 2?")
-        # generated_response = self.generate_text(self.end_token, f"What is your 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        # self.log_to_file(f"Assistant: {generated_response}")
 
         if self.bypass_chat_loop is False:
             self.chat_loop()
@@ -315,7 +312,7 @@ if __name__ == "__main__":
       "embedding_dim": 16,
       "lstm_units": 128,
       "hidden_dim": 16,
-      "epochs": 60,
+      "epochs": 40,
       "batch_size": 64,
       "learning_rate": 0.01,
       "dropout": 0.2,

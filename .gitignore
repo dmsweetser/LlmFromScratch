@@ -10,3 +10,6 @@ last_executed_index.json
 ingest/*
 !ingest/placeholder.txt
 !ingest/training.txt
+*.mp3
+*.wav
+*.exe

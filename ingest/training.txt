@@ -1,4 +1,3 @@
 What is your name? [m] My name is Bob. [e]
 What is 2 + 2? [m] 2 + 2 = 4. [e]
 What is 2 + 4? [m] 2 + 4 = 6. [e]
-What is the chief end of man? [m] Man’s chief end is to glorify God, and to enjoy him forever. [e]
