@@ -74,8 +74,8 @@ def main():
     def listen_for_feedback():
         input("Press any key to start")
         while True:
-            record_audio("microphone_input.wav")  # Record audio from microphone
-            response = listen("microphone_input.wav")
+            record_audio("input.wav")  # Record audio from microphone
+            response = listen("input.wav")
             if response:
                 print(f"You said: {response}")
                 question = response.strip()
@@ -84,30 +84,30 @@ def main():
                 response = chat_bot.generate_text(chat_bot.end_token, question, chat_bot.model, chat_bot.tokenizer, chat_bot.context_length, num_chars_to_generate=chat_bot.context_length)
                 response = response.replace("[e]","")
                 # Text-to-speech for the chatbot response
-                text_to_speech(response, "result")
+                text_to_speech(response, "output")
 
                 # Text-to-speech for asking feedback
-                text_to_speech("Was the result good or bad?", "feedback")
+                text_to_speech("Was the result good or bad?", "output")
 
                 # Listen for feedback
-                record_audio("feedback_input.wav", 2)  # Record feedback from microphone
-                feedback = listen("feedback_input.wav")
+                record_audio("input.wav", 2)  # Record feedback from microphone
+                feedback = listen("input.wav")
                 print(feedback)
                 if feedback:
                     if "good" in feedback.lower():
                         print("Back to normal listening...")
                     elif "bad" in feedback.lower():
                         # Text-to-speech for asking correction
-                        text_to_speech("Please provide the correct answer:", "correction")
+                        text_to_speech("Please provide the correct answer:", "output")
 
                         # Listen for correction
-                        record_audio("correction_input.wav")  # Record correction from microphone
-                        correction = listen("correction_input.wav")
+                        record_audio("input.wav")  # Record correction from microphone
+                        correction = listen("input.wav")
                         if correction:
-                            text_to_speech("Thanks. Let me try and remember that.", "thank_you")
+                            text_to_speech("Thanks. Let me try and remember that.", "output")
                             chat_bot.process_correction(f"{question} {chat_bot.delimiter} {correction}")
                             print("Processed correction. Back to normal listening...")
-                            text_to_speech("Alright. Thanks for that! Let's keep going.", "thank_you")
+                            text_to_speech("Alright. Thanks for that! Let's keep going.", "output")
 
     listen_for_feedback()               
 
