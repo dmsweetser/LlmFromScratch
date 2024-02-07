@@ -102,20 +102,22 @@ class BobTheBot:
                 # Get the last generated word from the dictionary
                 last_generated_word = list(self.last_generated_words.keys())[-1]
                 
-                # Get the index of the last generated word in the tokenizer's word_index
-                last_generated_word_index = tokenizer.word_index[last_generated_word]
-                
-                # Get the probability of the last generated word from the predicted probabilities
-                last_generated_word_probability = predicted_probs[last_generated_word_index]
+                if last_generated_word in tokenizer.word_index:
+                    
+                    # Get the index of the last generated word in the tokenizer's word_index
+                    last_generated_word_index = tokenizer.word_index[last_generated_word]
+                    
+                    # Get the probability of the last generated word from the predicted probabilities
+                    last_generated_word_probability = predicted_probs[last_generated_word_index]
 
-                # Check if the probability of the last generated word is positive
-                if last_generated_word_probability > 0:
-                    
-                    # Apply repetition penalty based on the probability of the last generated word
-                    repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
-                    
-                    # Multiply the predicted probabilities by the repetition penalty
-                    predicted_probs *= repetition_penalty
+                    # Check if the probability of the last generated word is positive
+                    if last_generated_word_probability > 0:
+                        
+                        # Apply repetition penalty based on the probability of the last generated word
+                        repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
+                        
+                        # Multiply the predicted probabilities by the repetition penalty
+                        predicted_probs *= repetition_penalty
 
             # Ensure predicted_probs sum to 1
             predicted_probs /= np.sum(predicted_probs)
