@@ -43,7 +43,7 @@ class BobTheBot:
 
         try:
             self.num_chars_to_generate = self.context_length
-            self.tokenizer = Tokenizer(lower=True, filters='!"#$%&()*+,-./:;<=>?@\\^_`{|}~\t\n')
+            self.tokenizer = Tokenizer(lower=True, filters='')
             self.model = self.load_or_train_model()
         except Exception as e:
             self.log_to_file(f"Exception encountered for variation: {e}")
@@ -234,9 +234,6 @@ class BobTheBot:
                 try:
                     with open(os.path.join("ingest", filename), encoding="utf-8") as file:
                         for line in file:
-                            # Adding three times to provide some oomph to training
-                            text_data_arr.append(line.strip())
-                            text_data_arr.append(line.strip())
                             text_data_arr.append(line.strip())
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
