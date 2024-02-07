@@ -27,6 +27,8 @@ def main():
     chat_bot = BobTheBot(config, True)
 
     def text_to_speech(text, filename):
+        if text == "":
+            text = "Sorry - something went wrong."
         tts = gtts.gTTS(text=text, lang='en', tld='com.au')
         tts.save(filename + ".mp3")
         os.system("ffplay -autoexit " + filename + ".mp3")
