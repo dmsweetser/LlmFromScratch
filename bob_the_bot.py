@@ -226,22 +226,12 @@ class BobTheBot:
                 self.tokenizer = tokenizer
                 self.log_to_file("Loaded existing model and tokenizer")
         else:
-            text_data_arr = [
-                f"What is your name? {self.delimiter} My name is Bob. {self.end_token}",
-                f"What is 2 + 2? {self.delimiter} 2 + 2 = 4. {self.end_token}"
-                ]
+            text_data_arr = []
             for filename in os.listdir("ingest"):
                 try:
                     with open(os.path.join("ingest", filename), encoding="utf-8") as file:
-                        text = file.read()
-                        words = text.strip().split()
-                        output = []
-                        for current_index in range(len(words) - 10):  # Adjusted loop range
-                            slice = words[current_index:current_index + 11]
-                            if len(slice) < 11:
-                                slice += [""] * (11 - len(slice))
-                            output.append(" ".join(slice[:5]) + " [m] " + " ".join(slice[5:6]))  # Adjusted slice for one word only
-                        text_data_arr.extend(output)
+                        for line in file:
+                            text_data_arr.append(line.strip())
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
                     continue
@@ -325,7 +315,7 @@ if __name__ == "__main__":
       "embedding_dim": 16,
       "lstm_units": 128,
       "hidden_dim": 16,
-      "epochs": 40,
+      "epochs": 60,
       "batch_size": 64,
       "learning_rate": 0.01,
       "dropout": 0.2,

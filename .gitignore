@@ -9,3 +9,4 @@ chat_log*
 last_executed_index.json
 ingest/*
 !ingest/placeholder.txt
+!ingest/training.txt
