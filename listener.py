@@ -27,7 +27,7 @@ def main():
     chat_bot = BobTheBot(config, True)
 
     def text_to_speech(text, filename):
-        tts = gtts.gTTS(text=text, lang='en')
+        tts = gtts.gTTS(text=text, lang='en', tld='com.au')
         tts.save(filename + ".mp3")
         os.system("ffplay -autoexit " + filename + ".mp3")
 
@@ -72,13 +72,19 @@ def main():
         return result["text"] if result else None
 
     def listen_for_feedback():
-        input("Press any key to start")
         while True:
+            text_to_speech("How can I help?", "output")
             record_audio("input.wav")  # Record audio from microphone
             response = listen("input.wav")
             if response:
                 print(f"You said: {response}")
                 question = response.strip()
+
+                if "stop listening" in question:
+                    input("Press any key to keep listening...")
+                    continue
+                elif question == "":
+                    continue
 
                 # Generate a response using the chatbot
                 response = chat_bot.generate_text(chat_bot.end_token, question, chat_bot.model, chat_bot.tokenizer, chat_bot.context_length, num_chars_to_generate=chat_bot.context_length)
