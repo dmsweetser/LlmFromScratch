@@ -235,8 +235,15 @@ class BobTheBot:
             for filename in os.listdir("ingest"):
                 try:
                     with open(os.path.join("ingest", filename), encoding="utf-8") as file:
-                        for line in file:
-                            text_data_arr.append(line.strip())
+                        text = file.readlines()
+                        for line in text:
+                            words = line.strip().split()
+                            max_window_size = min(self.batch_size, len(words))
+                            for i in range(1, max_window_size // 2 + 1):
+                                for j in range(len(words) - i):
+                                    left = ' '.join(words[j:j+i])
+                                    right = ' '.join(words[j+i:j+i+1])
+                                    text_data_arr.append(f"{left} [m] {right}")
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
                     continue
@@ -275,7 +282,15 @@ class BobTheBot:
                     self.log_to_file(f"Correct Answer: {correct_answer}")
 
                     # Update the training data with the new question and answer
-                    text_data_arr = [f"{user_question} {self.delimiter} {correct_answer} {self.end_token}"]
+                    text_data_arr = []
+                    line = f"{user_question} {correct_answer} {self.end_token}"
+                    words = line.strip().split()
+                    max_window_size = min(self.batch_size, len(words))
+                    for i in range(1, max_window_size // 2 + 1):
+                        for j in range(len(words) - i):
+                            left = ' '.join(words[j:j+i])
+                            right = ' '.join(words[j+i:j+i+1])
+                            text_data_arr.append(f"{left} [m] {right}")
                     input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
                     self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
                     self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
@@ -293,7 +308,15 @@ class BobTheBot:
     def process_correction(self, user_question):
         # Update the training data with the new question and answer
         self.log_to_file(f"Auto-training with new input: {user_question}")
-        text_data_arr = [f"{user_question} {self.end_token}"]
+        text_data_arr = []
+        line = f"{user_question} {self.end_token}"
+        words = line.strip().split()
+        max_window_size = min(self.batch_size, len(words))
+        for i in range(1, max_window_size // 2 + 1):
+            for j in range(len(words) - i):
+                left = ' '.join(words[j:j+i])
+                right = ' '.join(words[j+i:j+i+1])
+                text_data_arr.append(f"{left} [m] {right}")
         input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
         self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
         self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)

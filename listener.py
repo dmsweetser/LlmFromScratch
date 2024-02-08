@@ -113,7 +113,7 @@ def main():
                         correction = listen("input.wav")
                         if correction:
                             text_to_speech("Thanks. Let me try and remember that.", "output")
-                            chat_bot.process_correction(f"{question} {chat_bot.delimiter} {correction}")
+                            chat_bot.process_correction(f"{question} {correction}")
                             print("Processed correction. Back to normal listening...")
                             text_to_speech("Alright. Thanks for that! Let's keep going.", "output")
 
