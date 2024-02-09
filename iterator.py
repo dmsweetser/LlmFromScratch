@@ -20,7 +20,7 @@ def create_config():
   }
   return config
 
-for context_length in [64]:
+for context_length in [64]: 
     for embedding_dim in [16, 32, 64]:
         for lstm_units in [16, 32, 64, 96, 128, 160, 192]:
             for hidden_dim in [16, 32, 64, 96, 128, 160, 192]:
@@ -30,7 +30,7 @@ for context_length in [64]:
                             for dropout in [0.1, 0.2]:
                                 for recurrent_dropout in [0.1, 0.2]:
                                     for n_layers in [1, 2, 3, 4, 5]:
-                                        for model_variation in [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]:
+                                        for model_variation in [1,2,3,5,6,8,9,13]:
                                             config = create_config()
                                             config["context_length"] = context_length
                                             config["n_layers"] = n_layers
