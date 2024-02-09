@@ -123,10 +123,7 @@ class BobTheBot:
 
             # Sample the predicted token within the valid range of word_index
             try:
-                # Get the predicted token within the valid range
-                predicted_token = tf.argmax(predicted_probs, axis=1)
-                # Convert the predicted token to numpy array
-                predicted_token = predicted_token.numpy()[0]
+                predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1)[0])
             except Exception as e:
                 self.log_to_file(f"Exception encountered when generating next token: {e}")
                 continue
