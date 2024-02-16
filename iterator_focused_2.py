@@ -24,7 +24,7 @@ for context_length in [64]:
     for embedding_dim in [16, 32, 64]:
         for lstm_units in [16, 32, 64, 96, 128, 160, 192, 256]:
             for hidden_dim in [128, 160, 192, 256]:
-                for epochs in [40]:
+                for epochs in [10, 40]:
                     for batch_size in [32]:
                         for learning_rate in [0.01, 0.001]:
                             for dropout in [0.2]:
