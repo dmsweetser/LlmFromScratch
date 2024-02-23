@@ -26,10 +26,12 @@ def main():
         while True:
             # user_input = input("\nHow can I help?\n")
             user_input = "What is your name?"
-            temp = 0.2
-            repetition_penalty = 0.2
+            temp = 0.0
+            repetition_penalty = 0.0
             while temp < 20.0:
+                temp += 0.2
                 while repetition_penalty < 20.0:
+                    repetition_penalty += 0.2
                     response = chat_bot.generate_text(user_input, temp, repetition_penalty)
                     if "[e]" not in response:
                         response = chat_bot.generate_text(f"{user_input} {response}", temp / 2, repetition_penalty * 2)
@@ -38,7 +40,7 @@ def main():
                         print(f"Repetition Penalty: {repetition_penalty}")
                         print(f"\n\n\n{response}\n\n\n")
                         break
-
+                    
                     # feedback = input("\nWas my answer good? y/n\n")
                     # if feedback == "y":
                     #     continue
@@ -46,8 +48,8 @@ def main():
                     #     correction = input(f"\nWhat is the correct answer?\n")
                     #     chat_bot.process_correction(f"{user_input} {correction} [e]")
 
-                    temp += 0.2
-                    repetition_penalty += 0.2
+                    
+
 
     chat()
 
