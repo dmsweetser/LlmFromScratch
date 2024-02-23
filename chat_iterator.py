@@ -12,7 +12,7 @@ def main():
         "n_layers": 30,
         "embedding_dim": 16,
         "lstm_units": 70,
-        "hidden_dim": 50,
+        "hidden_dim": 50, 
         "epochs": 20,
         "batch_size": 32,
         "learning_rate": 0.01,
@@ -24,8 +24,9 @@ def main():
 
     def chat():
         while True:
-            user_input = input("\nHow can I help?\n")
-            temp = 0.1
+            # user_input = input("\nHow can I help?\n")
+            user_input = "What is your name?"
+            temp = 0.2
             repetition_penalty = 0.2
             while temp < 20.0:
                 while repetition_penalty < 20.0:
