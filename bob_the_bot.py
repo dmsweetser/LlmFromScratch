@@ -11,9 +11,12 @@ import json
 import string
 
 class BobTheBot:
-    def __init__(self, config, bypass_chat_loop):
+    def __init__(self, config, bypass_chat_loop, training_data_path, tokenizer_path, model_path):
 
-        self.training_data_file = "training_data.json"
+        self.training_data_file = training_data_path
+        self.tokenizer_path = tokenizer_path
+        self.model_path = model_path
+        
         self.logs_folder = "logs"
 
         os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
@@ -38,7 +41,6 @@ class BobTheBot:
         self.dropout = config["dropout"]
         self.recurrent_dropout = config["recurrent_dropout"]
         self.learning_rate = config["learning_rate"]
-        self.model_variation = config["model_variation"]
         self.n_layers = config["n_layers"]
 
         self.log_to_file(f"Current config:\n\n{json.dumps(config, indent=4)}")
@@ -59,7 +61,12 @@ class BobTheBot:
         with open(self.log_file_name, "a") as log_file:
             log_file.write(log_entry)
 
-    def generate_text(self, end_token, seed_text, model, tokenizer, sequence_length, num_chars_to_generate, temperature=0.8, repetition_penalty=0.46):
+    def generate_text(self, seed_text, temperature=0.8, repetition_penalty=0.46):
+        end_token = self.end_token
+        model = self.model
+        tokenizer = self.tokenizer
+        sequence_length = self.context_length
+        num_chars_to_generate = self.context_length
         self.log_to_file(f"Predicting using a temperature of {temperature} and a repetition_penalty of {repetition_penalty}")
         self.log_to_file(f"User: {seed_text}")
         # Initialize a dictionary to keep track of the last generated words
@@ -154,143 +161,12 @@ class BobTheBot:
         return result
 
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
-       
-        if self.model_variation == 1:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Bidirectional(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-        elif self.model_variation == 2:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-        elif self.model_variation == 3:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-
-        # Fundamentally incompatible
-        # elif self.model_variation == 4:
-        #     model = Sequential()
-        #     model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
-        #     model.add(MaxPooling1D(pool_size=2))
-        #     model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-        #     model.add(Dense(hidden_dim, activation='relu'))
-        #     model.add(Dropout(self.dropout))
-        #     model.add(Dense(vocab_size, activation='softmax'))
-            
-        elif self.model_variation == 5:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-        elif self.model_variation == 6:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-
-        # Attention layers aren't working either
-        # elif self.model_variation == 7:
-        #     model = Sequential()
-        #     model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-        #     model.add(Attention())  # Custom attention layer
-        #     model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-        #     model.add(Dense(hidden_dim, activation='relu'))
-        #     model.add(Dropout(self.dropout))
-        #     model.add(Dense(vocab_size, activation='softmax'))
-            
-        elif self.model_variation == 8:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-        elif self.model_variation == 9:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for _ in range(self.n_layers - 1):
-                model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-
-        # Too problematic to fix
-        # elif self.model_variation == 10:
-        #     model = Sequential()
-        #     model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-        #     for _ in range(self.n_layers - 1):
-        #         model.add(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-        #     model.add(Dense(hidden_dim, activation='relu'))
-        #     model.add(Dropout(self.dropout))
-        #     model.add(Dense(vocab_size, activation='softmax'))
-            
-        # Fundamentally incompatible
-        # elif self.model_variation == 11:
-        #     model = Sequential()
-        #     model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=(context_length, embedding_dim)))
-        #     model.add(MaxPooling1D(pool_size=2))
-        #     for _ in range(self.n_layers - 1):
-        #         model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-        #     model.add(Dense(hidden_dim, activation='relu'))
-        #     model.add(Dropout(self.dropout))
-        #     model.add(Dense(vocab_size, activation='softmax'))
-        
-        # Too difficult to resolve
-        # elif self.model_variation == 12:
-        #     model = Sequential()
-        #     model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-        #     for _ in range(self.n_layers - 1):
-        #         model.add(SimpleRNN(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-        #     model.add(Dense(hidden_dim, activation='relu'))
-        #     model.add(Dropout(self.dropout))
-        #     model.add(Dense(vocab_size, activation='softmax'))        
-
-        elif self.model_variation == 13:
-            model = Sequential()
-            model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-            for _ in range(self.n_layers - 1):
-                model.add(LSTM(lstm_units, return_sequences=True, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-            model.add(Dense(hidden_dim, activation='relu'))
-            model.add(Dropout(self.dropout))
-            model.add(Dense(vocab_size, activation='softmax'))
-        # Attention layers aren't working
-        # elif self.model_variation == 14:
-        #     model = Sequential()
-        #     model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-        #     model.add(Attention())  # Custom attention layer
-        #     for _ in range(self.n_layers - 1):
-        #         model.add(LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))
-        #     model.add(Dense(hidden_dim, activation='relu'))
-        #     model.add(Dropout(self.dropout))
-        #     model.add(Dense(vocab_size, activation='softmax'))
-        
-        # Too difficult to resolve
-        # elif self.model_variation == 15:
-        #     model = Sequential()
-        #     model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
-        #     for _ in range(self.n_layers - 1):
-        #         model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-        #     model.add(Dense(hidden_dim, activation='relu'))
-        #     model.add(Dropout(self.dropout))
-        #     model.add(Dense(vocab_size, activation='softmax'))
+        model = Sequential()
+        model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+        model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
+        model.add(Dense(hidden_dim, activation='relu'))
+        model.add(Dropout(self.dropout))
+        model.add(Dense(vocab_size, activation='softmax'))
 
         optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
@@ -321,15 +197,8 @@ class BobTheBot:
             parts = original_text.split(delimiter)
             question, answer = parts[0], parts[1]
 
-            # self.log_to_file(f"PREPROCESSING - Original Text: {original_text}")
-            # self.log_to_file(f"PREPROCESSING - Question: {question}")
-            # self.log_to_file(f"PREPROCESSING - Answer: {answer}")
-
             question_sequence = tokenizer.texts_to_sequences([question])[0]
             answer_sequence = tokenizer.texts_to_sequences([answer])[0]
-
-            # self.log_to_file(f"PREPROCESSING - Question Sequence: {question_sequence}")
-            # self.log_to_file(f"PREPROCESSING - Answer Sequence: {answer_sequence}")
 
             for i in range(1, len(answer_sequence) + 1):
                 input_sequence = question_sequence + answer_sequence[:i]
@@ -340,9 +209,6 @@ class BobTheBot:
                 input_sequences.append(input_padding)
                 output_sequences.append(output_sequence)
 
-        # self.log_to_file(f"PREPROCESSING - Input Sequences Shape: {np.array(input_sequences).shape}")
-        # self.log_to_file(f"PREPROCESSING - Output Sequences Shape: {np.array(output_sequences).shape}")
-
         # Save training data to JSON file
         with open(self.training_data_file, 'w') as json_file:
             json.dump(all_text_data_arr, json_file, indent=4)
@@ -350,14 +216,12 @@ class BobTheBot:
         return np.array(input_sequences), np.array(output_sequences), vocab_size
 
     def train_model(self, model, input_sequences, output_sequences, epochs, batch_size):
-        # self.log_to_file(f"Input Sequences Shape: {input_sequences.shape}")
-        # self.log_to_file(f"Output Sequences Shape: {output_sequences.shape}")
         model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
 
     def load_or_train_model(self):
-        if os.path.exists("model.keras"):
-            model = tf.keras.models.load_model("model.keras")
-            tokenizer_config_path = "tokenizer_config.json"
+        if os.path.exists(self.model_path):
+            model = tf.keras.models.load_model(self.model_path)
+            tokenizer_config_path = self.tokenizer_path
             with open(tokenizer_config_path, "r", encoding="utf-8") as json_file:
                 tokenizer_config_str = json_file.read()
                 tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(tokenizer_config_str)
@@ -384,9 +248,9 @@ class BobTheBot:
             model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
             self.train_model(model, input_sequences, output_sequences, self.epochs, self.batch_size)
             self.log_to_file("Trained a new model")
-            model.save("model.keras")
+            model.save(self.model_path)
             tokenizer_config = self.tokenizer.to_json()
-            with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+            with open(self.tokenizer_path, "w", encoding="utf-8") as json_file:
                 json_file.write(tokenizer_config)
             self.log_to_file("Saved the trained model as model.keras")
         return model
@@ -429,9 +293,9 @@ class BobTheBot:
                     self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
                     self.log_to_file("Trained existing model with new data")
 
-                    self.model.save("model.keras")
+                    self.model.save(self.model_path)
                     tokenizer_config = self.tokenizer.to_json()
-                    with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+                    with open(self.tokenizer_path, "w", encoding="utf-8") as json_file:
                         json_file.write(tokenizer_config)
                     self.log_to_file("Saved the trained model as model.keras")
             else:
@@ -455,11 +319,11 @@ class BobTheBot:
         self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
         self.log_to_file("Retrained existing model")
 
-        self.model.save("model.keras")
+        self.model.save(self.model_path)
         tokenizer_config = self.tokenizer.to_json()
-        with open("tokenizer_config.json", "w", encoding="utf-8") as json_file:
+        with open(self.tokenizer_path, "w", encoding="utf-8") as json_file:
             json_file.write(tokenizer_config)
-        self.log_to_file("Saved the trained model as model.keras")
+        self.log_to_file(f"Saved the trained model as {self.model_path}")
 
     def main(self):
 
@@ -481,13 +345,12 @@ if __name__ == "__main__":
         "embedding_dim": 16,
         "lstm_units": 70,
         "hidden_dim": 50,
-        "epochs": 50,
+        "epochs": 20,
         "batch_size": 32,
         "learning_rate": 0.01,
         "dropout": 0.2,
-        "recurrent_dropout": 0.2,
-        "model_variation": 8
+        "recurrent_dropout": 0.2
     }
 
-    bob_the_bot = BobTheBot(config, False)
+    bob_the_bot = BobTheBot(config, False, "training_data.json", "tokenizer_config.json", "model.keras")
     bob_the_bot.main()

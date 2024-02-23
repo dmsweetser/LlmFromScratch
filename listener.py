@@ -18,12 +18,11 @@ def main():
         "embedding_dim": 16,
         "lstm_units": 70,
         "hidden_dim": 50,
-        "epochs": 50,
+        "epochs": 20,
         "batch_size": 32,
         "learning_rate": 0.01,
         "dropout": 0.2,
-        "recurrent_dropout": 0.2,
-        "model_variation": 8
+        "recurrent_dropout": 0.2
     }
 
     chat_bot = BobTheBot(config, True)
@@ -91,7 +90,7 @@ def main():
                     continue
 
                 # Generate a response using the chatbot
-                response = chat_bot.generate_text(chat_bot.end_token, question, chat_bot.model, chat_bot.tokenizer, chat_bot.context_length, num_chars_to_generate=chat_bot.context_length)
+                response = chat_bot.generate_text(question)
                 response = response.replace("[e]","")
                 # Text-to-speech for the chatbot response
                 text_to_speech(response, "output")
