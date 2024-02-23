@@ -13,15 +13,17 @@ def main():
     model = whisper.load_model("tiny.en")
 
     config = {
-      "context_length": 128,
-      "embedding_dim": 16,
-      "lstm_units": 128,
-      "hidden_dim": 16,
-      "epochs": 40,
-      "batch_size": 64,
-      "learning_rate": 0.01,
-      "dropout": 0.2,
-      "recurrent_dropout": 0.2
+        "context_length": 64,
+        "n_layers": 30,
+        "embedding_dim": 16,
+        "lstm_units": 70,
+        "hidden_dim": 50,
+        "epochs": 50,
+        "batch_size": 32,
+        "learning_rate": 0.01,
+        "dropout": 0.2,
+        "recurrent_dropout": 0.2,
+        "model_variation": 8
     }
 
     chat_bot = BobTheBot(config, True)
