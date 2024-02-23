@@ -1,10 +1,10 @@
 venv/
 logs/
 __pycache__/
-model.*
+model*.*
 tokenizer.*
-tokenizer_config.*
-training_data.*
+tokenizer_config*.*
+training_data*.*
 chat_log*
 last_executed_index.json
 ingest/*
