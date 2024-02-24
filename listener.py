@@ -14,7 +14,6 @@ def main():
 
     config = {
         "context_length": 64,
-        "n_layers": 30,
         "embedding_dim": 16,
         "lstm_units": 70,
         "hidden_dim": 50,

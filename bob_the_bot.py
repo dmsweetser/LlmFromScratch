@@ -41,7 +41,6 @@ class BobTheBot:
         self.dropout = config["dropout"]
         self.recurrent_dropout = config["recurrent_dropout"]
         self.learning_rate = config["learning_rate"]
-        self.n_layers = config["n_layers"]
 
         self.log_to_file(f"Current config:\n\n{json.dumps(config, indent=4)}")
 
@@ -341,7 +340,6 @@ if __name__ == "__main__":
 
     config = {
         "context_length": 64,
-        "n_layers": 30,
         "embedding_dim": 16,
         "lstm_units": 70,
         "hidden_dim": 50,
