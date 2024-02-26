@@ -25,7 +25,7 @@ def main():
         chat_bot = BobTheBot(config, True, f"training_data{time.time()}.json", f"tokenizer_config{time.time()}.json", f"model{time.time()}.keras")        
 
         for run in range(1,10,1):
-            response = chat_bot.generate_text(user_input, 10.0, 50.0)
+            response = chat_bot.generate_text(user_input, 3.0, 50.0)
             print(f"\n\n\n\n\n{response}\n\n\n\n\n")
                 
     chat()
