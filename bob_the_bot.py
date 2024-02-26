@@ -41,6 +41,8 @@ class BobTheBot:
         self.dropout = config["dropout"]
         self.recurrent_dropout = config["recurrent_dropout"]
         self.learning_rate = config["learning_rate"]
+        self.temperature = config["temperature"]
+        self.repetition_penalty = config["repetition_penalty"]
 
         self.log_to_file(f"Current config:\n\n{json.dumps(config, indent=4)}")
 
@@ -60,7 +62,9 @@ class BobTheBot:
         with open(self.log_file_name, "a") as log_file:
             log_file.write(log_entry)
 
-    def generate_text(self, seed_text, temperature=0.8, repetition_penalty=0.46):
+    def generate_text(self, seed_text):
+        temperature = self.temperature
+        repetition_penalty = self.repetition_penalty
         end_token = self.end_token
         model = self.model
         tokenizer = self.tokenizer
@@ -342,12 +346,14 @@ if __name__ == "__main__":
         "context_length": 64,
         "embedding_dim": 16,
         "lstm_units": 70,
-        "hidden_dim": 50,
+        "hidden_dim": 50, 
         "epochs": 20,
         "batch_size": 32,
         "learning_rate": 0.01,
         "dropout": 0.2,
-        "recurrent_dropout": 0.2
+        "recurrent_dropout": 0.2,
+        "temperature": 3.0,
+        "repetition_penalty": 50.0
     }
 
     bob_the_bot = BobTheBot(config, False, "training_data.json", "tokenizer_config.json", "model.keras")

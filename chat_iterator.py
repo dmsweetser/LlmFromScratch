@@ -19,13 +19,15 @@ def main():
             "batch_size": 32,
             "learning_rate": 0.01,
             "dropout": 0.2,
-            "recurrent_dropout": 0.2
+            "recurrent_dropout": 0.2,
+            "temperature": 3.0,
+            "repetition_penalty": 50.0
         }
 
         chat_bot = BobTheBot(config, True, f"training_data{time.time()}.json", f"tokenizer_config{time.time()}.json", f"model{time.time()}.keras")        
 
         for run in range(1,10,1):
-            response = chat_bot.generate_text(user_input, 3.0, 50.0)
+            response = chat_bot.generate_text(user_input)
             print(f"\n\n\n\n\n{response}\n\n\n\n\n")
                 
     chat()
