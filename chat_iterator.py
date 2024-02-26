@@ -13,16 +13,16 @@ def main():
         config = {
             "context_length": 64,
             "embedding_dim": 16,
-            "lstm_units": 70,
-            "hidden_dim": 50, 
-            "n_layers": 5,
-            "epochs": 20,
+            "lstm_units": 200,
+            "hidden_dim": 10000, 
+            "n_layers": 3,
+            "epochs": 10,
             "batch_size": 32,
             "learning_rate": 0.01,
             "dropout": 0.2,
             "recurrent_dropout": 0.2,
             "temperature": 3.0,
-            "repetition_penalty": 50.0
+            "repetition_penalty": 1.0
         }
 
         chat_bot = BobTheBot(config, True, f"training_data{time.time()}.json", f"tokenizer_config{time.time()}.json", f"model{time.time()}.keras")        
