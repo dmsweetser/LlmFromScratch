@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Embedding, LSTM, Bidirectional, GRU, Dense, Dropout, SimpleRNN
+from tensorflow.keras.layers import Embedding, Bidirectional, GRU, Dense, Dropout, Conv1D, MaxPooling1D, BatchNormalization, LSTM, Add
+
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -36,6 +37,7 @@ class BobTheBot:
         self.embedding_dim = config["embedding_dim"]
         self.lstm_units = config["lstm_units"]
         self.hidden_dim = config["hidden_dim"]
+        self.n_layers = config["n_layers"]
         self.epochs = config["epochs"]
         self.batch_size = config["batch_size"]
         self.dropout = config["dropout"]
@@ -51,7 +53,7 @@ class BobTheBot:
             self.tokenizer = Tokenizer(lower=True, filters='')
             self.model = self.load_or_train_model()
         except Exception as e:
-            self.log_to_file(f"Exception encountered for variation {self.model_variation}: {e}")
+            self.log_to_file(f"Exception encountered: {e}")
 
     def log_to_file(self, message):
         timestamp = datetime.datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
@@ -165,16 +167,30 @@ class BobTheBot:
 
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
         model = Sequential()
-        model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))
+        
+        # Embedding layer to convert integer indices to dense vectors of fixed size
+        model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))  # Specify input_length here
+        
         model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-        model.add(Dense(hidden_dim, activation='relu'))
+        
+        # Batch normalization layer to normalize activations
+        model.add(BatchNormalization())
+                
+        # Dense layer with ReLU activation
+        for layer in range(1,self.n_layers):
+            model.add(Dense(hidden_dim, activation='relu'))
+        
+        # Dropout layer for regularization
         model.add(Dropout(self.dropout))
+        
+        # Output layer with softmax activation for multi-class classification
         model.add(Dense(vocab_size, activation='softmax'))
 
+        # Compile the model with sparse categorical crossentropy loss and Adam optimizer
         optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
         model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
-        return model        
+        return model
 
     def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):
         # Load existing training data from the JSON file if it exists
