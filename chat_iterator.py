@@ -13,15 +13,15 @@ def main():
         config = {
             "context_length": 64,
             "embedding_dim": 16,
-            "lstm_units": 200,
-            "hidden_dim": 10000, 
-            "n_layers": 3,
-            "epochs": 10,
+            "lstm_units": 50,
+            "hidden_dim": 5000, 
+            "n_layers": 5,
+            "epochs": 20,
             "batch_size": 32,
             "learning_rate": 0.01,
             "dropout": 0.2,
             "recurrent_dropout": 0.2,
-            "temperature": 3.0,
+            "temperature": 1.0,
             "repetition_penalty": 1.0
         }
 
