@@ -14,14 +14,14 @@ def main():
             "context_length": 256,
             "embedding_dim": 256,
             "lstm_units": 64,
-            "hidden_dim": 2048, 
-            "n_layers": 8,
+            "hidden_dim": 8192, 
+            "n_layers": 4,
             "epochs": 10,
             "batch_size": 32,
             "learning_rate": 0.01,
             "dropout": 0.2,
             "recurrent_dropout": 0.2,
-            "temperature": 1.1,
+            "temperature": 1.0,
             "repetition_penalty": 1.0
         }
 
