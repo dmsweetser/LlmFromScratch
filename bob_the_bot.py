@@ -215,7 +215,7 @@ class BobTheBot:
             original_text = all_text_data_arr[sequences.index(seq)].lower()
             parts = original_text.split(delimiter)
             question, answer = parts[0], parts[1]
-
+            
             question_sequence = tokenizer.texts_to_sequences([question])[0]
             answer_sequence = tokenizer.texts_to_sequences([answer])[0]
 
