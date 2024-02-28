@@ -15,13 +15,13 @@ def main():
             "embedding_dim": 256,
             "lstm_units": 64,
             "hidden_dim": 2048, 
-            "n_layers": 4,
-            "epochs": 5,
+            "n_layers": 8,
+            "epochs": 10,
             "batch_size": 32,
             "learning_rate": 0.01,
             "dropout": 0.2,
             "recurrent_dropout": 0.2,
-            "temperature": 1.0,
+            "temperature": 1.1,
             "repetition_penalty": 1.0
         }
 
