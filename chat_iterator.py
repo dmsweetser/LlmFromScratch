@@ -15,7 +15,7 @@ def main():
             "embedding_dim": 256,
             "lstm_units": 64,
             "hidden_dim": 8192, 
-            "n_layers": 4,
+            "n_layers": 3,
             "epochs": 10,
             "batch_size": 32,
             "learning_rate": 0.01,

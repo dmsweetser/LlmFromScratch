@@ -101,36 +101,36 @@ class BobTheBot:
             # Get the predicted probabilities for the next token from the model
             predicted_probs = model.predict(token_list, verbose=0)[0]
 
-            # Adjust the predicted probabilities using temperature for diversity
-            predicted_probs = np.log(predicted_probs) / temperature
-            exp_preds = np.exp(predicted_probs)
-            predicted_probs = exp_preds / np.sum(exp_preds)
+            # # Adjust the predicted probabilities using temperature for diversity
+            # predicted_probs = np.log(predicted_probs) / temperature
+            # exp_preds = np.exp(predicted_probs)
+            # predicted_probs = exp_preds / np.sum(exp_preds)
 
             # Addresses a casting issue later on
             predicted_probs = predicted_probs.astype(np.float64)
 
-            # Apply repetition penalty based on the last generated word's probability
-            # Check if there are any previously generated words
-            if len(self.last_generated_words) > 0:
-                # Get the last generated word from the dictionary
-                last_generated_word = list(self.last_generated_words.keys())[-1]
+            # # Apply repetition penalty based on the last generated word's probability
+            # # Check if there are any previously generated words
+            # if len(self.last_generated_words) > 0:
+            #     # Get the last generated word from the dictionary
+            #     last_generated_word = list(self.last_generated_words.keys())[-1]
                 
-                if last_generated_word in tokenizer.word_index:
+            #     if last_generated_word in tokenizer.word_index:
                     
-                    # Get the index of the last generated word in the tokenizer's word_index
-                    last_generated_word_index = tokenizer.word_index[last_generated_word]
+            #         # Get the index of the last generated word in the tokenizer's word_index
+            #         last_generated_word_index = tokenizer.word_index[last_generated_word]
                     
-                    # Get the probability of the last generated word from the predicted probabilities
-                    last_generated_word_probability = predicted_probs[last_generated_word_index]
+            #         # Get the probability of the last generated word from the predicted probabilities
+            #         last_generated_word_probability = predicted_probs[last_generated_word_index]
 
-                    # Check if the probability of the last generated word is positive
-                    if last_generated_word_probability > 0:
+            #         # Check if the probability of the last generated word is positive
+            #         if last_generated_word_probability > 0:
                         
-                        # Apply repetition penalty based on the probability of the last generated word
-                        repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
+            #             # Apply repetition penalty based on the probability of the last generated word
+            #             repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
                         
-                        # Multiply the predicted probabilities by the repetition penalty
-                        predicted_probs *= repetition_penalty
+            #             # Multiply the predicted probabilities by the repetition penalty
+            #             predicted_probs *= repetition_penalty
 
             # Ensure predicted_probs sum to 1
             predicted_probs /= np.sum(predicted_probs)
