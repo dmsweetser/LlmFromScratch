@@ -13,7 +13,7 @@ def main():
         config = {
             "context_length": 256,
             "embedding_dim": 256,
-            "lstm_units": 128,
+            "lstm_units": 256,
             "hidden_dim": 4096, 
             "n_layers": 4,
             "epochs": 10,

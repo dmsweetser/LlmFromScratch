@@ -16,21 +16,37 @@ def create_config():
       "batch_size": None,
       "learning_rate": None,
       "dropout": None,
-      "recurrent_dropout": None
+      "recurrent_dropout": None,
+      "temperature": 1.0,
+      "repetition_penalty": 1.0
   }
   return config
 
+
+        #     "context_length": 256,
+        #     "embedding_dim": 256,
+        #     "lstm_units": 256,
+        #     "hidden_dim": 4096, 
+        #     "n_layers": 4,
+        #     "epochs": 10,
+        #     "batch_size": 32,
+        #     "learning_rate": 0.01,
+        #     "dropout": 0.2,
+        #     "recurrent_dropout": 0.2,
+        #     "temperature": 1.0,
+        #     "repetition_penalty": 1.0
+        # }
+
 for context_length in [64]: 
-    for embedding_dim in [16, 32, 64]:
-        for lstm_units in [16, 32, 64, 96, 128, 160, 192]:
-            for hidden_dim in [16, 32, 64, 96, 128, 160, 192]:
-                for epochs in [40]:
-                    for batch_size in [32, 64, 96]:
-                        for learning_rate in [0.1, 0.01, 0.001]:
-                            for dropout in [0.1, 0.2]:
-                                for recurrent_dropout in [0.1, 0.2]:
-                                    for n_layers in [1, 2, 3, 4, 5]:
-                                        for model_variation in [1,2,3,5,6,8,9,13]:
+    for embedding_dim in range(32,512,32):
+        for lstm_units in range(32,512,32):
+            for hidden_dim in range(32,8192,32):
+                for epochs in [10]:
+                    for batch_size in [32]:
+                        for learning_rate in [0.01]:
+                            for dropout in [0.2]:
+                                for recurrent_dropout in [0.2]:
+                                    for n_layers in range(1,30,1):
                                             config = create_config()
                                             config["context_length"] = context_length
                                             config["n_layers"] = n_layers
@@ -42,7 +58,6 @@ for context_length in [64]:
                                             config["learning_rate"] = learning_rate
                                             config["dropout"] = dropout
                                             config["recurrent_dropout"] = recurrent_dropout
-                                            config["model_variation"] = model_variation
                                             configs.append(config)
 
 try:
@@ -60,7 +75,7 @@ def run_next_config():
 
   if len(configs) > 0 and last_executed_index < len(configs) - 1:
       current_config = configs[last_executed_index + 1]
-      bob_the_bot = BobTheBot(current_config, True)
+      bob_the_bot = BobTheBot(current_config, True, "training_data.json", "tokenizer_config.json", "model.keras")
       bob_the_bot.main()
       os.system("del model.keras")
       os.system("del tokenizer_config.json")

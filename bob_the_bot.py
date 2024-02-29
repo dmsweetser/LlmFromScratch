@@ -346,12 +346,13 @@ class BobTheBot:
 
     def main(self):
 
-        self.log_to_file(f"User: What is your name?")
-        generated_response = self.generate_text(self.end_token, f"What is your name?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        self.log_to_file(f"Assistant: {generated_response}")
-        self.log_to_file(f"User: What is 2 + 2?")
-        generated_response = self.generate_text(self.end_token, f"What is 2 + 2?", self.model, self.tokenizer, self.context_length, num_chars_to_generate=self.context_length)
-        self.log_to_file(f"Assistant: {generated_response}")
+        for num in range(1,10,1):
+            self.log_to_file(f"User: What is your name?")
+            generated_response = self.generate_text(f"What is your name?")
+            self.log_to_file(f"Assistant: {generated_response}")
+            self.log_to_file(f"User: What is 2 + 2?")
+            generated_response = self.generate_text(f"What is 2 + 2?")
+            self.log_to_file(f"Assistant: {generated_response}")
 
         if self.bypass_chat_loop is False:
             self.chat_loop()
