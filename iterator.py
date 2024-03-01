@@ -40,7 +40,7 @@ def create_config():
 for context_length in [64]: 
     for embedding_dim in range(32,129,32):
         for lstm_units in range(64,513,32):
-            for hidden_dim in range(256,8193,256):
+            for hidden_dim in range(128,2049,128):
                 for epochs in [10]:
                     for batch_size in [32]:
                         for learning_rate in [0.01]:
