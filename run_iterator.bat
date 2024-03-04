@@ -28,7 +28,7 @@ echo Virtual environment activated successfully.
 echo Running your script
 
 REM Run your Python script within the virtual environment
-python iterator_focused_3.py
+python iterator.py
 
 REM Check the exit code of the script
 if %errorlevel% neq 0 (
