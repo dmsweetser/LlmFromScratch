@@ -89,6 +89,7 @@ if __name__ == "__main__":
     os.system("del training_data.json")
     while len(configs) > 0:
         try:
+            print(f"Running iteration {last_executed_index} out of {len(configs)}")
             run_next_config()
         except Exception as e:
             print(f"Exception encountered for index {last_executed_index}")
