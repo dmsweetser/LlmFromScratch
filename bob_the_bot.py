@@ -361,16 +361,17 @@ if __name__ == "__main__":
 
     config = {
         "context_length": 64,
-        "embedding_dim": 16,
-        "lstm_units": 70,
-        "hidden_dim": 50, 
-        "epochs": 20,
+        "n_layers": 12,
+        "embedding_dim": 32,
+        "lstm_units": 256,
+        "hidden_dim": 1536,
+        "epochs": 10,
         "batch_size": 32,
         "learning_rate": 0.01,
         "dropout": 0.2,
         "recurrent_dropout": 0.2,
-        "temperature": 3.0,
-        "repetition_penalty": 50.0
+        "temperature": 1.0,
+        "repetition_penalty": 1.0
     }
 
     bob_the_bot = BobTheBot(config, False, "training_data.json", "tokenizer_config.json", "model.keras")

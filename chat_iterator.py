@@ -11,11 +11,11 @@ def main():
         user_input = "What is your name?"
 
         config = {
-            "context_length": 256,
-            "embedding_dim": 256,
+            "context_length": 64,
+            "n_layers": 12,
+            "embedding_dim": 32,
             "lstm_units": 256,
-            "hidden_dim": 4096, 
-            "n_layers": 4,
+            "hidden_dim": 1536,
             "epochs": 10,
             "batch_size": 32,
             "learning_rate": 0.01,
