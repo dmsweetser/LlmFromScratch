@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Embedding, Bidirectional, GRU, Dense, Dropout, Conv1D, MaxPooling1D, BatchNormalization, LSTM, Add
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Concatenate, Embedding, Bidirectional, GRU, Dense, Dropout, Conv1D, MaxPooling1D, BatchNormalization, LSTM, Add
 
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -166,25 +167,36 @@ class BobTheBot:
         return result
 
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
-        model = Sequential()
-        
+        # Input layer
+        inputs = Input(shape=(context_length,))
+
         # Embedding layer to convert integer indices to dense vectors of fixed size
-        model.add(Embedding(vocab_size, embedding_dim, input_length=context_length))  # Specify input_length here
-        
-        model.add(Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)))
-        
+        embedding = Embedding(vocab_size, embedding_dim)(inputs)
+
+        # Positional Encoding
+        position_embedding = self._get_positional_encoding(context_length, embedding_dim)
+
+        # Concatenate positional embeddings with the output of the embedding layer
+        concatenated = Concatenate(axis=2)([embedding, position_embedding])
+
+        # Bidirectional GRU layer
+        gru_output = Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))(concatenated)
+
         # Batch normalization layer to normalize activations
-        model.add(BatchNormalization())
-                
-        # Dense layer with ReLU activation
-        for layer in range(1,self.n_layers):
-            model.add(Dense(hidden_dim, activation='relu'))
-        
+        normalized = BatchNormalization()(gru_output)
+
+        # Dense layers with ReLU activation
+        for _ in range(self.n_layers - 1):  
+            normalized = Dense(hidden_dim, activation='relu')(normalized)
+
         # Dropout layer for regularization
-        model.add(Dropout(self.dropout))
-        
+        dropout = Dropout(self.dropout)(normalized)
+
         # Output layer with softmax activation for multi-class classification
-        model.add(Dense(vocab_size, activation='softmax'))
+        outputs = Dense(vocab_size, activation='softmax')(dropout)
+
+        # Define the model
+        model = Model(inputs=inputs, outputs=outputs)
 
         # Compile the model with sparse categorical crossentropy loss and Adam optimizer
         optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
@@ -192,6 +204,20 @@ class BobTheBot:
 
         return model
 
+    def _get_positional_encoding(self, seq_length, d_model):
+        position_enc = np.array([
+            [pos / np.power(10000, 2 * (i // 2) / d_model) for i in range(d_model)]
+            for pos in range(seq_length)
+        ])
+        print("Positional encoding shape:", position_enc.shape)
+        
+        position_enc[:, 0::2] = np.sin(position_enc[:, 0::2])
+        position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])
+        
+        position_embedding = position_enc[:, :d_model]  # Take only the first d_model dimensions
+        position_embedding = tf.convert_to_tensor(position_embedding, dtype=tf.float32)
+        return position_embedding
+    
     def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):
         # Load existing training data from the JSON file if it exists
         existing_data = []
@@ -215,6 +241,9 @@ class BobTheBot:
             original_text = all_text_data_arr[sequences.index(seq)].lower()
             parts = original_text.split(delimiter)
             question, answer = parts[0], parts[1]
+            
+            if delimiter in question or delimiter in answer:
+                raise Exception(f"Delimiter {delimiter} detected in training data")
             
             question_sequence = tokenizer.texts_to_sequences([question])[0]
             answer_sequence = tokenizer.texts_to_sequences([answer])[0]
@@ -256,10 +285,12 @@ class BobTheBot:
                             words = line.strip().split()
                             max_window_size = min(self.batch_size, len(words))
                             for i in range(1, max_window_size // 2 + 1):
+                                if i < 4:
+                                    continue
                                 for j in range(len(words) - i):
                                     left = ' '.join(words[j:j+i])
                                     right = ' '.join(words[j+i:j+i+1])
-                                    text_data_arr.append(f"{left} [m] {right}")
+                                    text_data_arr.append(f"{left} [m] {right}")                 
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
                     continue
@@ -303,6 +334,8 @@ class BobTheBot:
                     words = line.strip().split()
                     max_window_size = min(self.batch_size, len(words))
                     for i in range(1, max_window_size // 2 + 1):
+                        if i < 4:
+                            continue
                         for j in range(len(words) - i):
                             left = ' '.join(words[j:j+i])
                             right = ' '.join(words[j+i:j+i+1])
@@ -361,10 +394,10 @@ if __name__ == "__main__":
 
     config = {
         "context_length": 64,
-        "n_layers": 12,
-        "embedding_dim": 32,
+        "n_layers": 16,
+        "embedding_dim": 64,
         "lstm_units": 256,
-        "hidden_dim": 1536,
+        "hidden_dim": 256,
         "epochs": 10,
         "batch_size": 32,
         "learning_rate": 0.01,
