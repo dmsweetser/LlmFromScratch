@@ -176,11 +176,11 @@ class BobTheBot:
         # Positional Encoding
         position_embedding = self._get_positional_encoding(context_length, embedding_dim)
 
-        # Concatenate positional embeddings with the output of the embedding layer
-        concatenated = Concatenate(axis=2)([embedding, position_embedding])
+        # Add positional encoding to the embedding
+        embedded_with_positions = embedding + position_embedding
 
         # Bidirectional GRU layer
-        gru_output = Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))(concatenated)
+        gru_output = Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))(embedded_with_positions)
 
         # Batch normalization layer to normalize activations
         normalized = BatchNormalization()(gru_output)
@@ -209,13 +209,12 @@ class BobTheBot:
             [pos / np.power(10000, 2 * (i // 2) / d_model) for i in range(d_model)]
             for pos in range(seq_length)
         ])
-        print("Positional encoding shape:", position_enc.shape)
-        
-        position_enc[:, 0::2] = np.sin(position_enc[:, 0::2])
-        position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])
-        
-        position_embedding = position_enc[:, :d_model]  # Take only the first d_model dimensions
-        position_embedding = tf.convert_to_tensor(position_embedding, dtype=tf.float32)
+
+        # Use sine and cosine functions to encode positional information
+        position_enc[:, 0::2] = np.sin(position_enc[:, 0::2])  # Apply sin to even indices
+        position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # Apply cos to odd indices
+
+        position_embedding = tf.convert_to_tensor(position_enc, dtype=tf.float32)
         return position_embedding
     
     def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):
@@ -282,15 +281,16 @@ class BobTheBot:
                     with open(os.path.join("ingest", filename), encoding="utf-8") as file:
                         text = file.readlines()
                         for line in text:
-                            words = line.strip().split()
-                            max_window_size = min(self.batch_size, len(words))
-                            for i in range(1, max_window_size // 2 + 1):
-                                if i < 4:
-                                    continue
-                                for j in range(len(words) - i):
-                                    left = ' '.join(words[j:j+i])
-                                    right = ' '.join(words[j+i:j+i+1])
-                                    text_data_arr.append(f"{left} [m] {right}")                 
+                            text_data_arr.append(line)
+                            # words = line.strip().split()
+                            # max_window_size = min(self.batch_size, len(words))
+                            # for i in range(1, max_window_size // 2 + 1):
+                            #     if i < 4:
+                            #         continue
+                            #     for j in range(len(words) - i):
+                            #         left = ' '.join(words[j:j+i])
+                            #         right = ' '.join(words[j+i:j+i+1])
+                            #         text_data_arr.append(f"{left} [m] {right}")                 
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
                     continue
