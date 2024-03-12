@@ -281,16 +281,16 @@ class BobTheBot:
                     with open(os.path.join("ingest", filename), encoding="utf-8") as file:
                         text = file.readlines()
                         for line in text:
-                            text_data_arr.append(line)
-                            # words = line.strip().split()
-                            # max_window_size = min(self.batch_size, len(words))
-                            # for i in range(1, max_window_size // 2 + 1):
-                            #     if i < 4:
-                            #         continue
-                            #     for j in range(len(words) - i):
-                            #         left = ' '.join(words[j:j+i])
-                            #         right = ' '.join(words[j+i:j+i+1])
-                            #         text_data_arr.append(f"{left} [m] {right}")                 
+                            # text_data_arr.append(line.strip())
+                            words = line.strip().split()
+                            max_window_size = min(self.batch_size, len(words))
+                            for i in range(1, max_window_size // 2 + 1):
+                                if i < 4:
+                                    continue
+                                for j in range(len(words) - i):
+                                    left = ' '.join(words[j:j+i])
+                                    right = ' '.join(words[j+i:j+i+1])
+                                    text_data_arr.append(f"{left} [m] {right}")                 
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
                     continue
