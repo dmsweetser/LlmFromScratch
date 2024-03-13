@@ -125,67 +125,16 @@ class BobTheBot:
             return ""
 
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
-        # Input layer
+        
         inputs = Input(shape=(context_length,))
-
-        # Embedding layer to convert integer indices to dense vectors of fixed size
-        embedding = Embedding(vocab_size, embedding_dim)(inputs)
-
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(embedding)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
-        lstm_output = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)(x)
-        normalized = Dense(hidden_dim, activation='relu')(lstm_output)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        normalized = Dense(hidden_dim, activation='relu')(normalized)
-        outputs = Dense(vocab_size)(normalized)  # No activation here
+        pipeline = Embedding(vocab_size, embedding_dim)(inputs)        
+        pipeline = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(pipeline)
+        pipeline = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)(pipeline)
+        pipeline = Dense(hidden_dim, activation='relu')(pipeline)
+        pipeline = Dense(vocab_size)(pipeline)  # No activation here
 
         # Apply softmax activation here
-        outputs = Dense(vocab_size, activation='softmax')(outputs)
+        outputs = Dense(vocab_size, activation='softmax')(pipeline)
 
         # Define the model
         model = Model(inputs=inputs, outputs=outputs)
