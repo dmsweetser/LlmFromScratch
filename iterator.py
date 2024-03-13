@@ -6,59 +6,26 @@ configs = []
 last_executed_index = -1
 
 def create_config():
-  config = {
-      "context_length": None,
-      "n_layers": None,
-      "embedding_dim": None,
-      "lstm_units": None,
-      "hidden_dim": None,
-      "epochs": None,
-      "batch_size": None,
-      "learning_rate": None,
-      "dropout": None,
-      "recurrent_dropout": None,
-      "temperature": 1.0,
-      "repetition_penalty": 1.0
-  }
-  return config
+    config = {
+        "context_length": 64,
+        "n_layers": 1,
+        "embedding_dim": 64,
+        "lstm_units": 64, 
+        "hidden_dim": 64,
+        "epochs": 60,
+        "batch_size": 64,
+        "learning_rate": 0.01,
+        "dropout": 0.2,
+        "recurrent_dropout": 0.2,
+        "temperature": 1.0,
+        "repetition_penalty": 1.0
+    }
+    return config
 
-
-        #     "context_length": 256,
-        #     "embedding_dim": 256,
-        #     "lstm_units": 256,
-        #     "hidden_dim": 4096, 
-        #     "n_layers": 4,
-        #     "epochs": 10,
-        #     "batch_size": 32,
-        #     "learning_rate": 0.01,
-        #     "dropout": 0.2,
-        #     "recurrent_dropout": 0.2,
-        #     "temperature": 1.0,
-        #     "repetition_penalty": 1.0
-        # }
-
-for context_length in [64]: 
-    for embedding_dim in range(32,129,32):
-        for lstm_units in range(64,513,32):
-            for hidden_dim in range(128,2049,128):
-                for epochs in [10]:
-                    for batch_size in [32]:
-                        for learning_rate in [0.01]:
-                            for dropout in [0.2]:
-                                for recurrent_dropout in [0.2]:
-                                    for n_layers in range(2,21,2):
-                                            config = create_config()
-                                            config["context_length"] = context_length
-                                            config["n_layers"] = n_layers
-                                            config["embedding_dim"] = embedding_dim
-                                            config["lstm_units"] = lstm_units
-                                            config["hidden_dim"] = hidden_dim
-                                            config["epochs"] = epochs
-                                            config["batch_size"] = batch_size
-                                            config["learning_rate"] = learning_rate
-                                            config["dropout"] = dropout
-                                            config["recurrent_dropout"] = recurrent_dropout
-                                            configs.append(config)
+for epochs in range(1,1000,1): 
+    config = create_config()
+    config["epochs"] = epochs
+    configs.append(config)
 
 try:
    with open('last_executed_index.json', 'r') as file:

@@ -16,7 +16,7 @@ def main():
             "embedding_dim": 64,
             "lstm_units": 64, 
             "hidden_dim": 64,
-            "epochs": 100,
+            "epochs": 60,
             "batch_size": 64,
             "learning_rate": 0.01,
             "dropout": 0.2,
