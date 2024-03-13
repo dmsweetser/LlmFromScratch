@@ -12,11 +12,11 @@ def main():
 
         config = {
             "context_length": 64,
-            "n_layers": 512,
-            "embedding_dim": 128,
-            "lstm_units": 512, 
-            "hidden_dim": 512,
-            "epochs": 10,
+            "n_layers": 1,
+            "embedding_dim": 64,
+            "lstm_units": 128, 
+            "hidden_dim": 128,
+            "epochs": 100,
             "batch_size": 64,
             "learning_rate": 0.01,
             "dropout": 0.2,

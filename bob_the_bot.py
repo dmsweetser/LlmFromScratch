@@ -46,6 +46,8 @@ class BobTheBot:
         self.learning_rate = config["learning_rate"]
         self.temperature = config["temperature"]
         self.repetition_penalty = config["repetition_penalty"]
+        
+        self.last_generated_words = {}
 
         self.log_to_file(f"Current config:\n\n{json.dumps(config, indent=4)}")
 
@@ -66,105 +68,61 @@ class BobTheBot:
             log_file.write(log_entry)
 
     def generate_text(self, seed_text):
-        temperature = self.temperature
-        repetition_penalty = self.repetition_penalty
-        end_token = self.end_token
-        model = self.model
-        tokenizer = self.tokenizer
-        sequence_length = self.context_length
-        num_chars_to_generate = self.context_length
-        self.log_to_file(f"Predicting using a temperature of {temperature} and a repetition_penalty of {repetition_penalty}")
-        self.log_to_file(f"User: {seed_text}")
-        # Initialize a dictionary to keep track of the last generated words
-        self.last_generated_words = {}
-        # Initialize the result string
-        result = ""
+        try:
+            temperature = self.temperature
+            repetition_penalty = self.repetition_penalty
+            end_token = self.end_token
+            model = self.model
+            tokenizer = self.tokenizer
+            sequence_length = self.context_length
+            num_chars_to_generate = self.context_length
+            self.log_to_file(f"Predicting using a temperature of {temperature} and a repetition_penalty of {repetition_penalty}")
+            self.log_to_file(f"User: {seed_text}")
 
-        seed_text = seed_text.translate(str.maketrans('', '', string.punctuation))
+            # Preprocess seed text
+            seed_text = seed_text.translate(str.maketrans('', '', string.punctuation))
+            generated_text = seed_text.lower()
+            split_generated_text = generated_text.split()
+            for word in split_generated_text:
+                self.last_generated_words[word] = True        
 
-        # Convert the seed text to lowercase
-        generated_text = seed_text.lower()
+            result = ""
 
-        # Split the generated text into a list of words
-        split_generated_text = generated_text.split()
-        
-        # Update the last_generated_words dictionary with the words in the split_generated_text
-        for word in split_generated_text:
-            self.last_generated_words[word] = True        
+            # Generate text
+            for _ in range(num_chars_to_generate):
+                token_list = tokenizer.texts_to_sequences([generated_text])[0]
+                token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
 
-        # Loop for generating the specified number of characters
-        for _ in range(num_chars_to_generate):
-            # Convert the generated text to token sequences
-            token_list = tokenizer.texts_to_sequences([generated_text])[0]
-            # Pad the token sequences to the specified sequence length
-            token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
+                predicted_probs = model.predict(token_list, verbose=0)[0]
+                predicted_probs /= np.sum(predicted_probs)
 
-            # Get the predicted probabilities for the next token from the model
-            predicted_probs = model.predict(token_list, verbose=0)[0]
+                # Sample the predicted token using temperature scaling
+                predicted_token = np.argmax(np.random.multinomial(1, predicted_probs ** (1 / temperature), 1)[0])
 
-            # # Adjust the predicted probabilities using temperature for diversity
-            # predicted_probs = np.log(predicted_probs) / temperature
-            # exp_preds = np.exp(predicted_probs)
-            # predicted_probs = exp_preds / np.sum(exp_preds)
+                output_word = tokenizer.index_word.get(predicted_token, "")
 
-            # Addresses a casting issue later on
-            predicted_probs = predicted_probs.astype(np.float64)
+                # Apply repetition penalty
+                if output_word in self.last_generated_words:
+                    predicted_probs[predicted_token] *= repetition_penalty
 
-            # # Apply repetition penalty based on the last generated word's probability
-            # # Check if there are any previously generated words
-            # if len(self.last_generated_words) > 0:
-            #     # Get the last generated word from the dictionary
-            #     last_generated_word = list(self.last_generated_words.keys())[-1]
-                
-            #     if last_generated_word in tokenizer.word_index:
-                    
-            #         # Get the index of the last generated word in the tokenizer's word_index
-            #         last_generated_word_index = tokenizer.word_index[last_generated_word]
-                    
-            #         # Get the probability of the last generated word from the predicted probabilities
-            #         last_generated_word_probability = predicted_probs[last_generated_word_index]
+                if output_word != "":
+                    result += output_word + " "
+                    if output_word == end_token:
+                        self.log_to_file(f"Detected end token '{end_token}'. Ending generation.")
+                        break
 
-            #         # Check if the probability of the last generated word is positive
-            #         if last_generated_word_probability > 0:
-                        
-            #             # Apply repetition penalty based on the probability of the last generated word
-            #             repetition_penalty = (1 - last_generated_word_probability) ** repetition_penalty
-                        
-            #             # Multiply the predicted probabilities by the repetition penalty
-            #             predicted_probs *= repetition_penalty
-
-            # Ensure predicted_probs sum to 1
-            predicted_probs /= np.sum(predicted_probs)
-
-            # Sample the predicted token within the valid range of word_index
-            try:
-                predicted_token = np.argmax(np.random.multinomial(1, predicted_probs, 1)[0])
-            except Exception as e:
-                self.log_to_file(f"Exception encountered when generating next token: {e}")
-                continue
-
-            # Find the corresponding word for the predicted token
-            output_word = tokenizer.index_word.get(predicted_token, "")
-
-            # Append the output word to the result string
-            if output_word != "":
-                result += output_word + " "
-                # Check if the generated word is the end token, and if so, end generation
-                if output_word == end_token:
-                    self.log_to_file(f"Detected end token '{end_token}'. Ending generation.")
+                    generated_text += " " + output_word
+                    self.last_generated_words[output_word] = True
+                else:
+                    self.log_to_file(f"Warning: Invalid token index: {predicted_token}")
+                    self.log_to_file(f"Generated text: {generated_text}")
                     break
 
-                # Update the generated text and last_generated_words dictionary
-                generated_text += " " + output_word
-                self.last_generated_words[output_word] = True
-            else:
-                # Log a warning for an invalid token index
-                self.log_to_file(f"Warning: Invalid token index: {predicted_token}")
-                self.log_to_file(f"Generated text: {generated_text}")
-                break
-
-        self.log_to_file(f"Assistant: {result}")
-        return result
+            self.log_to_file(f"Assistant: {result}")
+            return result
+        except Exception as e:
+            self.log_to_file(f"Error occurred during text generation: {e}")
+            return ""
 
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
         # Input layer
@@ -173,27 +131,61 @@ class BobTheBot:
         # Embedding layer to convert integer indices to dense vectors of fixed size
         embedding = Embedding(vocab_size, embedding_dim)(inputs)
 
-        # Positional Encoding
-        position_embedding = self._get_positional_encoding(context_length, embedding_dim)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(embedding)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        x = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(x)
+        lstm_output = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout)(x)
+        normalized = Dense(hidden_dim, activation='relu')(lstm_output)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        normalized = Dense(hidden_dim, activation='relu')(normalized)
+        outputs = Dense(vocab_size)(normalized)  # No activation here
 
-        # Add positional encoding to the embedding
-        embedded_with_positions = embedding + position_embedding
-
-        # Bidirectional GRU layer
-        gru_output = Bidirectional(GRU(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout))(embedded_with_positions)
-
-        # Batch normalization layer to normalize activations
-        normalized = BatchNormalization()(gru_output)
-
-        # Dense layers with ReLU activation
-        for _ in range(self.n_layers - 1):  
-            normalized = Dense(hidden_dim, activation='relu')(normalized)
-
-        # Dropout layer for regularization
-        dropout = Dropout(self.dropout)(normalized)
-
-        # Output layer with softmax activation for multi-class classification
-        outputs = Dense(vocab_size, activation='softmax')(dropout)
+        # Apply softmax activation here
+        outputs = Dense(vocab_size, activation='softmax')(outputs)
 
         # Define the model
         model = Model(inputs=inputs, outputs=outputs)
