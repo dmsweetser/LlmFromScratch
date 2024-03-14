@@ -94,10 +94,9 @@ class BobTheBot:
                 token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
 
                 predicted_probs = model.predict(token_list, verbose=0)[0]
-                predicted_probs /= np.sum(predicted_probs)
 
-                # Sample the predicted token using temperature scaling
-                predicted_token = np.argmax(np.random.multinomial(1, predicted_probs ** (1 / temperature), 1)[0])
+                # Sample the predicted token using the probabilities
+                predicted_token = np.random.choice(len(predicted_probs), p=predicted_probs)
 
                 output_word = tokenizer.index_word.get(predicted_token, "")
 
