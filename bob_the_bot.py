@@ -334,12 +334,12 @@ if __name__ == "__main__":
 
     config = {
         "context_length": 64,
-        "n_layers": 16,
+        "n_layers": 1,
         "embedding_dim": 64,
-        "lstm_units": 256,
-        "hidden_dim": 256,
-        "epochs": 10,
-        "batch_size": 32,
+        "lstm_units": 64, 
+        "hidden_dim": 64,
+        "epochs": 60,
+        "batch_size": 64,
         "learning_rate": 0.01,
         "dropout": 0.2,
         "recurrent_dropout": 0.2,
