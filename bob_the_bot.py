@@ -125,6 +125,19 @@ class BobTheBot:
 
     def create_model(self, context_length, vocab_size, embedding_dim, lstm_units, hidden_dim):
         
+        # Calculate parameters for each layer
+        embedding_params = vocab_size * embedding_dim
+        lstm1_params = 4 * ((embedding_dim + lstm_units) * lstm_units)
+        lstm2_params = 4 * ((lstm_units + lstm_units) * lstm_units)
+        dense1_params = (lstm_units * hidden_dim) + hidden_dim
+        dense2_params = (hidden_dim * vocab_size) + vocab_size
+        output_dense_params = (hidden_dim * vocab_size) + vocab_size
+
+        # Total parameters
+        total_params = embedding_params + lstm1_params + lstm2_params + dense1_params + dense2_params + output_dense_params
+
+        print("Total parameters:", total_params)
+        
         inputs = Input(shape=(context_length,))
         pipeline = Embedding(vocab_size, embedding_dim)(inputs)        
         pipeline = LSTM(lstm_units, dropout=self.dropout, recurrent_dropout=self.recurrent_dropout, return_sequences=True)(pipeline)
