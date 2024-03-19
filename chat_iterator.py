@@ -13,9 +13,9 @@ def main():
         config = {
             "context_length": 256,
             "n_layers": 1,
-            "embedding_dim": 64,
-            "lstm_units": 64, 
-            "hidden_dim": 500000,
+            "embedding_dim": 128,
+            "lstm_units": 128, 
+            "hidden_dim": 1000000,
             "epochs": 60,
             "batch_size": 64,
             "learning_rate": 0.01,
