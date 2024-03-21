@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Concatenate, Embedding, Bidirectional, GRU, Dense, Dropout, Conv1D, MaxPooling1D, BatchNormalization, LSTM, Add
-
+from concurrent.futures import ThreadPoolExecutor
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -13,12 +13,11 @@ import json
 import string
 
 class BobTheBot:
-    def __init__(self, config, bypass_chat_loop, training_data_path, tokenizer_path, model_path, ingest_dir):
+    def __init__(self, config, bypass_chat_loop, training_data_path, tokenizer_path, model_path):
 
         self.training_data_file = training_data_path
         self.tokenizer_path = tokenizer_path
         self.model_path = model_path
-        self.ingest_dir = ingest_dir
         
         self.logs_folder = "logs"
 
@@ -149,16 +148,13 @@ class BobTheBot:
         # Apply softmax activation here
         outputs = Dense(vocab_size, activation='softmax')(pipeline)
 
-        # Create a GPU session
-        with tf.device('/gpu:0'):
-            # Define the model
-            model = Model(inputs=inputs, outputs=outputs)
+        # Define the model
+        model = Model(inputs=inputs, outputs=outputs)
 
-            # Compile the model with sparse categorical crossentropy loss and Adam optimizer
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+        # Compile the model with sparse categorical crossentropy loss and Adam optimizer
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+        model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
-        self.log_to_file("Created model with GPU support")
         return model
 
     def _get_positional_encoding(self, seq_length, d_model):
@@ -174,60 +170,41 @@ class BobTheBot:
         position_embedding = tf.convert_to_tensor(position_enc, dtype=tf.float32)
         return position_embedding
     
-    def preprocess_data(self, text_data_arr, tokenizer, context_length, delimiter):
-        # Load existing training data from the JSON file if it exists
+    def preprocess_data(self, text_data_arr, tokenizer, context_length):
         existing_data = []
         if os.path.exists(self.training_data_file):
             with open(self.training_data_file, 'r') as json_file:
                 existing_data = json.load(json_file)
 
-        # Append new data to existing data
         all_text_data_arr = existing_data + text_data_arr
 
-        # Update the tokenizer with the combined dataset
         tokenizer.fit_on_texts(all_text_data_arr)
         sequences = tokenizer.texts_to_sequences(all_text_data_arr)
 
-        vocab_size = len(tokenizer.word_index) + 1  # Adding 1 for the padding token
+        vocab_size = len(tokenizer.word_index) + 1
 
         input_sequences = []
         output_sequences = []
 
-        for seq in sequences:
-            original_text = all_text_data_arr[sequences.index(seq)].lower()
-            parts = original_text.split(delimiter)
-            question, answer = parts[0], parts[1]
-            
-            if delimiter in question or delimiter in answer:
-                raise Exception(f"Delimiter {delimiter} detected in training data")
-            
-            question_sequence = tokenizer.texts_to_sequences([question])[0]
-            answer_sequence = tokenizer.texts_to_sequences([answer])[0]
+        for sequence in sequences:
+            original_text = all_text_data_arr[sequences.index(sequence)].lower()
 
-            for i in range(1, len(answer_sequence) + 1):
-                input_sequence = question_sequence + answer_sequence[:i]
+            for i in range(1, len(sequence)):
+                input_sequence = sequence[:i]
                 input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
 
-                output_sequence = answer_sequence[i - 1]
+                output_sequence = sequence[i]
 
                 input_sequences.append(input_padding)
                 output_sequences.append(output_sequence)
 
-        # Save training data to JSON file
         with open(self.training_data_file, 'w') as json_file:
             json.dump(all_text_data_arr, json_file, indent=4)
 
         return np.array(input_sequences), np.array(output_sequences), vocab_size
 
-def train_model(self, model, input_sequences, output_sequences, epochs, batch_size):
-    with tf.device('/gpu:0'):
-        session = tf.Session(graph=model.graph, config=tf.ConfigProto(log_device_placement=True, allow_growth=True))
-        model.set_session(session)
-
+    def train_model(self, model, input_sequences, output_sequences, epochs, batch_size):
         model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
-
-        self.log_to_file("Trained model with GPU support")
-        model.save(self.model_path)
 
     def load_or_train_model(self):
         if os.path.exists(self.model_path):
@@ -240,21 +217,15 @@ def train_model(self, model, input_sequences, output_sequences, epochs, batch_si
                 self.log_to_file("Loaded existing model and tokenizer")
         else:
             text_data_arr = []
-            for filename in os.listdir(self.ingest_dir):
+            for filename in os.listdir("ingest"):
+                
                 try:
-                    with open(os.path.join(self.ingest_dir, filename), encoding="utf-8") as file:
-                        for line in file:
-                            words = line.strip().split()
-                            max_window_size = min(self.batch_size, len(words))
-                            for i in range(4, max_window_size // 2 + 1):
-                                for j in range(len(words) - i):
-                                    left = ' '.join(words[j:j+i])
-                                    right = ' '.join(words[j+i:j+i+1])
-                                    text_data_arr.append(f"{left} [m] {right}")                 
+                    with open(os.path.join("ingest", filename), encoding="utf-8") as file:
+                        text_data_arr.append(file.read())
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
                     continue
-            input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
+            input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length)
             model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
             self.train_model(model, input_sequences, output_sequences, self.epochs, self.batch_size)
             self.log_to_file("Trained a new model")
@@ -300,7 +271,7 @@ def train_model(self, model, input_sequences, output_sequences, epochs, batch_si
                             left = ' '.join(words[j:j+i])
                             right = ' '.join(words[j+i:j+i+1])
                             text_data_arr.append(f"{left} [m] {right}")
-                    input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
+                    input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length)
                     self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
                     self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
                     self.log_to_file("Trained existing model with new data")
@@ -326,7 +297,7 @@ def train_model(self, model, input_sequences, output_sequences, epochs, batch_si
                 left = ' '.join(words[j:j+i])
                 right = ' '.join(words[j+i:j+i+1])
                 text_data_arr.append(f"{left} [m] {right}")
-        input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length, self.delimiter)
+        input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length)
         self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
         self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
         self.log_to_file("Retrained existing model")

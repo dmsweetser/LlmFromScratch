@@ -16,8 +16,8 @@ def main():
             "n_layers": 1,
             "embedding_dim": 128,
             "lstm_units": 128, 
-            "hidden_dim": 100000,
-            "epochs": 60,
+            "hidden_dim": 1024,
+            "epochs": 1,
             "batch_size": 64,
             "learning_rate": 0.01,
             "dropout": 0.2,
@@ -29,10 +29,9 @@ def main():
         chat_bot = BobTheBot(
             config, 
             True, 
-            f"training_data_constitution.json", 
+            f"training_data{time.time()}.json", 
             f"tokenizer_config{time.time()}.json", 
-            f"model{time.time()}.keras", 
-            "ingest_2"
+            f"model{time.time()}.keras"
             )        
 
         for run in range(1,10,1):
@@ -46,5 +45,4 @@ def main():
     chat()
 
 if __name__ == "__main__":
-    print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
     main()
