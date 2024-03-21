@@ -13,11 +13,12 @@ import json
 import string
 
 class BobTheBot:
-    def __init__(self, config, bypass_chat_loop, training_data_path, tokenizer_path, model_path):
+    def __init__(self, config, bypass_chat_loop, training_data_path, tokenizer_path, model_path, ingest_dir):
 
         self.training_data_file = training_data_path
         self.tokenizer_path = tokenizer_path
         self.model_path = model_path
+        self.ingest_dir = ingest_dir
         
         self.logs_folder = "logs"
 
@@ -148,13 +149,16 @@ class BobTheBot:
         # Apply softmax activation here
         outputs = Dense(vocab_size, activation='softmax')(pipeline)
 
-        # Define the model
-        model = Model(inputs=inputs, outputs=outputs)
+        # Create a GPU session
+        with tf.device('/gpu:0'):
+            # Define the model
+            model = Model(inputs=inputs, outputs=outputs)
 
-        # Compile the model with sparse categorical crossentropy loss and Adam optimizer
-        optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
-        model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
+            # Compile the model with sparse categorical crossentropy loss and Adam optimizer
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate)
+            model.compile(loss="sparse_categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
+        self.log_to_file("Created model with GPU support")
         return model
 
     def _get_positional_encoding(self, seq_length, d_model):
@@ -215,8 +219,15 @@ class BobTheBot:
 
         return np.array(input_sequences), np.array(output_sequences), vocab_size
 
-    def train_model(self, model, input_sequences, output_sequences, epochs, batch_size):
+def train_model(self, model, input_sequences, output_sequences, epochs, batch_size):
+    with tf.device('/gpu:0'):
+        session = tf.Session(graph=model.graph, config=tf.ConfigProto(log_device_placement=True, allow_growth=True))
+        model.set_session(session)
+
         model.fit(input_sequences, output_sequences, epochs=epochs, batch_size=batch_size)
+
+        self.log_to_file("Trained model with GPU support")
+        model.save(self.model_path)
 
     def load_or_train_model(self):
         if os.path.exists(self.model_path):
@@ -229,9 +240,9 @@ class BobTheBot:
                 self.log_to_file("Loaded existing model and tokenizer")
         else:
             text_data_arr = []
-            for filename in os.listdir("ingest"):
+            for filename in os.listdir(self.ingest_dir):
                 try:
-                    with open(os.path.join("ingest", filename), encoding="utf-8") as file:
+                    with open(os.path.join(self.ingest_dir, filename), encoding="utf-8") as file:
                         for line in file:
                             words = line.strip().split()
                             max_window_size = min(self.batch_size, len(words))
