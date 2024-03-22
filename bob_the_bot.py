@@ -13,11 +13,13 @@ import json
 import string
 
 class BobTheBot:
-    def __init__(self, config, bypass_chat_loop, training_data_path, tokenizer_path, model_path):
+    def __init__(self, config, bypass_chat_loop, training_data_path, tokenizer_path, model_path, ingest_path):
 
         self.training_data_file = training_data_path
         self.tokenizer_path = tokenizer_path
         self.model_path = model_path
+        
+        self.ingest_path = ingest_path
         
         self.logs_folder = "logs"
 
@@ -38,7 +40,6 @@ class BobTheBot:
         self.embedding_dim = config["embedding_dim"]
         self.lstm_units = config["lstm_units"]
         self.hidden_dim = config["hidden_dim"]
-        self.n_layers = config["n_layers"]
         self.epochs = config["epochs"]
         self.batch_size = config["batch_size"]
         self.dropout = config["dropout"]
@@ -217,10 +218,10 @@ class BobTheBot:
                 self.log_to_file("Loaded existing model and tokenizer")
         else:
             text_data_arr = []
-            for filename in os.listdir("ingest"):
+            for filename in os.listdir(self.ingest_path):
                 
                 try:
-                    with open(os.path.join("ingest", filename), encoding="utf-8") as file:
+                    with open(os.path.join(self.ingest_path, filename), encoding="utf-8") as file:
                         text_data_arr.append(file.read())
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
@@ -325,7 +326,6 @@ if __name__ == "__main__":
 
     config = {
         "context_length": 64,
-        "n_layers": 1,
         "embedding_dim": 64,
         "lstm_units": 64, 
         "hidden_dim": 64,

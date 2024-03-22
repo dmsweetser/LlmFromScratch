@@ -12,12 +12,11 @@ def main():
         user_input = "What is your name?"
 
         config = {
-            "context_length": 256,
-            "n_layers": 1,
-            "embedding_dim": 128,
-            "lstm_units": 128, 
-            "hidden_dim": 1024,
-            "epochs": 1,
+            "context_length": 64,
+            "embedding_dim": 64,
+            "lstm_units": 64, 
+            "hidden_dim": 64,
+            "epochs": 60,
             "batch_size": 64,
             "learning_rate": 0.01,
             "dropout": 0.2,
@@ -31,7 +30,8 @@ def main():
             True, 
             f"training_data{time.time()}.json", 
             f"tokenizer_config{time.time()}.json", 
-            f"model{time.time()}.keras"
+            f"model{time.time()}.keras",
+            "ingest_2"
             )        
 
         for run in range(1,10,1):
