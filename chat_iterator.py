@@ -9,7 +9,6 @@ import tensorflow as tf
 def main():
 
     def chat():
-        user_input = "What is your name?"
 
         config = {
             "context_length": 64,
@@ -31,7 +30,7 @@ def main():
             f"training_data{time.time()}.json", 
             f"tokenizer_config{time.time()}.json", 
             f"model{time.time()}.keras",
-            "ingest_2"
+            "ingest"
             )        
 
         for run in range(1,10,1):

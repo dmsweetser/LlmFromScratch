@@ -107,11 +107,10 @@ class BobTheBot:
 
                 if output_word != "":
                     result += output_word + " "
-                    if output_word == end_token:
+                    generated_text += " " + output_word
+                    if end_token in generated_text:
                         self.log_to_file(f"Detected end token '{end_token}'. Ending generation.")
                         break
-
-                    generated_text += " " + output_word
                     self.last_generated_words[output_word] = True
                 else:
                     self.log_to_file(f"Warning: Invalid token index: {predicted_token}")
@@ -193,9 +192,7 @@ class BobTheBot:
             for i in range(1, len(sequence)):
                 input_sequence = sequence[:i]
                 input_padding = pad_sequences([input_sequence], maxlen=context_length, padding="pre")[0]
-
                 output_sequence = sequence[i]
-
                 input_sequences.append(input_padding)
                 output_sequences.append(output_sequence)
 
@@ -222,7 +219,7 @@ class BobTheBot:
                 
                 try:
                     with open(os.path.join(self.ingest_path, filename), encoding="utf-8") as file:
-                        text_data_arr.append(file.read())
+                        text_data_arr.append(f"{file.read()}{self.end_token}")
                 except Exception as e:
                     print(f"Error processing file '{filename}': {e}")
                     continue
@@ -263,15 +260,7 @@ class BobTheBot:
                     # Update the training data with the new question and answer
                     text_data_arr = []
                     line = f"{user_question} {correct_answer} {self.end_token}"
-                    words = line.strip().split()
-                    max_window_size = min(self.batch_size, len(words))
-                    for i in range(1, max_window_size // 2 + 1):
-                        if i < 4:
-                            continue
-                        for j in range(len(words) - i):
-                            left = ' '.join(words[j:j+i])
-                            right = ' '.join(words[j+i:j+i+1])
-                            text_data_arr.append(f"{left} [m] {right}")
+                    text_data_arr.append(line)
                     input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length)
                     self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
                     self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)
@@ -291,13 +280,7 @@ class BobTheBot:
         self.log_to_file(f"Auto-training with new input: {user_question}")
         text_data_arr = []
         line = f"{user_question} {self.end_token}"
-        words = line.strip().split()
-        max_window_size = min(self.batch_size, len(words))
-        for i in range(1, max_window_size // 2 + 1):
-            for j in range(len(words) - i):
-                left = ' '.join(words[j:j+i])
-                right = ' '.join(words[j+i:j+i+1])
-                text_data_arr.append(f"{left} [m] {right}")
+        text_data_arr.append(line)
         input_sequences, output_sequences, vocab_size = self.preprocess_data(text_data_arr, self.tokenizer, self.context_length)
         self.model = self.create_model(self.context_length, vocab_size, self.embedding_dim, self.lstm_units, self.hidden_dim)
         self.train_model(self.model, input_sequences, output_sequences, self.epochs, self.batch_size)

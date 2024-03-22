@@ -1,3 +1,0 @@
-What is your name? My name is Bob. [e]
-What is 2 + 2? 2 + 2 = 4. [e]
-What is 2 + 4? 2 + 4 = 6. [e]
