@@ -65,6 +65,7 @@ class SQLiteVectorStore:
 # Example usage:
 if __name__ == "__main__":
     db_name = 'vector_store.db'
+    # Downloaded from https://www.kaggle.com/datasets/adarshsng/googlenewsvectors?resource=download
     word_embedding_model_path = 'path_to_word2vec_model.bin'  # Provide path to your Word2Vec model
     vector_store = SQLiteVectorStore(db_name, word_embedding_model_path)
 

@@ -6,3 +6,5 @@ gtts
 SpeechRecognition
 pyaudio
 openai-whisper
+gensim
+scikit-learn
