@@ -99,6 +99,10 @@ class BobTheBot:
                 # Sample the predicted token using the probabilities
                 predicted_token = np.random.choice(len(predicted_probs), p=predicted_probs)
 
+                # Get the probability of the selected token
+                selected_token_prob = predicted_probs[predicted_token]
+                self.log_to_file(f"Token probability: {selected_token_prob}")
+
                 output_word = tokenizer.index_word.get(predicted_token, "")
 
                 # Apply repetition penalty
@@ -119,6 +123,38 @@ class BobTheBot:
 
             self.log_to_file(f"Assistant: {result}")
             return result
+        except Exception as e:
+            self.log_to_file(f"Error occurred during text generation: {e}")
+            return ""
+        
+
+    def get_next_token(self, seed_text):
+        try:
+            model = self.model
+            tokenizer = self.tokenizer
+            sequence_length = self.context_length
+            
+            # # Preprocess seed text
+            # seed_text = seed_text.translate(str.maketrans('', '', string.punctuation))
+            # generated_text = seed_text.lower()
+
+            result = ""
+
+            token_list = tokenizer.texts_to_sequences([seed_text])[0]
+            token_list = pad_sequences([token_list], maxlen=sequence_length, padding="pre")
+
+            predicted_probs = model.predict(token_list, verbose=0)[0]
+
+            # Find the index of the token with the highest probability
+            max_prob_index = np.argmax(predicted_probs)
+            
+            # Get the word corresponding to the index
+            result = tokenizer.index_word.get(max_prob_index, "")
+
+            # Get the probability of the selected token
+            selected_token_prob = predicted_probs[max_prob_index]
+            return result, selected_token_prob
+        
         except Exception as e:
             self.log_to_file(f"Error occurred during text generation: {e}")
             return ""
